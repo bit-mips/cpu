@@ -1,0 +1,103 @@
+\documentclass{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage[UTF8]{ctex}
+\usepackage{tikz}
+\usepackage{tikz-timing}
+
+\newenvironment{signals}{
+	\begin{center}
+		\begin{tabular}{| c | c | c | c |}
+			\hline
+			信号 & 方向 & 宽度 & 描述 \\ \hline
+}{
+		\end{tabular}
+	\end{center}
+}
+
+\newcommand\sigin{Input}
+\newcommand\sigout{Output}
+
+\begin{document}
+
+\section{IF}
+
+\subsection{时钟复位信号}
+
+\begin{signals}
+	clock & \sigin & 1 & 时钟 \\ \hline
+	reset & \sigin & 1 & 同步复位，高电平有效 \\ \hline
+\end{signals}
+
+\subsection{指令存储接口}
+
+\subsubsection{信号}
+
+\begin{signals}
+	ibus\_address & \sigout & 32 & 地址 \\ \hline
+	ibus\_read & \sigout & 1 & 读使能 \\ \hline
+	ibus\_data & \sigin & 32 & 读数据 \\ \hline
+	ibus\_stall & \sigin & 1 & 暂停 \\ \hline
+	ibus\_error & \sigin & 1 & 错误 \\ \hline
+\end{signals}
+
+\subsubsection{时序}
+
+IF模块在第一个上升沿置ibus\_read为高，同时给出ibus\_address，并维持至下一个上升沿。
+存储器在第二个上升沿给出数据，若未就绪则置ibus\_stall为高。
+IF模块第三个上升沿读ibus\_data。
+
+参考图\ref{tt:ifmem}。
+
+\begin{figure}[h]
+	\centering
+	\begin{tikztimingtable}
+		clock &         HCCC    CC    CC    CC    CC    CC    CC    CC    CC    CC    CC \\
+		ibus\_read &    LLHH    LL    HH    HH    LL    HH    HH    LL    HH    LL    LL \\
+		ibus\_address & UUDD{A0}UU    DD{A1}DD{A2}UU    DD{A3}DD{A4}UU    DD{A5}UU    UU \\
+		ibus\_stall &   LLLL    LL    LL    LL    LL    LL    HH    LL    LL    LL    LL \\
+		ibus\_data &    UUUU    DD{D0}UU    DD{D1}DD{D2}UU    UU    DD{D3}DD{D4}DD{D5}UU \\
+	\end{tikztimingtable}
+	\caption{IF指令存储接口时序}
+	\label{tt:ifmem}
+\end{figure}
+
+\subsection{下级FIFO接口}
+
+\subsubsection{信号}
+
+\begin{signals}
+	output\_address & \sigout & 32 & 指令地址 \\ \hline
+	output\_instruction & \sigout & 32 & 指令数据 \\ \hline
+	output\_valid & \sigout & 32 & 指令数据有效 \\ \hline
+	output\_full & \sigin & 32 & FIFO满反馈 \\ \hline
+\end{signals}
+
+\subsubsection{时序}
+
+IF模块需要向FIFO写入时，将数据送至output\_address及output\_instruction并使能output\_valid信号。
+检测到output\_full信号时需要停止写入，并等待full信号撤消后继续。
+
+参考图\ref{tt:iffifo}。
+
+\begin{figure}[h]
+	\centering
+	\begin{tikztimingtable}
+		clock &               HCCC    CCCC    CC    CC    CCCCCC    CC \\
+		output\_address &     UUDD{A0}UUDD{A1}DD{A2}DD{A3}UUUUDD{I4}UU \\
+		output\_instruction & UUDD{I0}UUDD{I1}DD{I2}DD{I3}UUUUDD{I4}UU \\
+		output\_valid &       LLHH    LLHH    HH    HH    LLLLHH    LL \\
+		output\_full &        LLLL    LLLL    LL    HH    HHLLLL    LL \\
+	\end{tikztimingtable}
+	\caption{IF FIFO接口时序}
+	\label{tt:iffifo}
+\end{figure}
+
+\subsection{转移接口}
+
+\begin{signals}
+	branch\_address & \sigin & 32 & 跳转地址 \\ \hline
+	branch\_valid & \sigin & 32 & 跳转有效 \\ \hline
+\end{signals}
+
+\end{document}
