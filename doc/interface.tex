@@ -44,7 +44,7 @@
 \subsubsection{时序}
 
 IF模块在第一个上升沿置ibus\_read为高，同时给出ibus\_address，并维持至下一个上升沿。
-存储器在第二个上升沿给出数据，若未就绪则置ibus\_stall为高。
+存储器在第二个上升沿给出数据，若未就绪则置ibus\_stall为高。模块在检测到ibus\_stall信号时保持输出不变。
 IF模块第三个上升沿读ibus\_data。
 
 参考图\ref{tt:ifmem}。
@@ -52,11 +52,11 @@ IF模块第三个上升沿读ibus\_data。
 \begin{figure}[h]
 	\centering
 	\begin{tikztimingtable}
-		clock &         HCCC    CC    CC    CC    CC    CC    CC    CC    CC    CC    CC \\
-		ibus\_read &    LLHH    LL    HH    HH    LL    HH    HH    LL    HH    LL    LL \\
-		ibus\_address & UUDD{A0}UU    DD{A1}DD{A2}UU    DD{A3}DD{A4}UU    DD{A5}UU    UU \\
-		ibus\_stall &   LLLL    LL    LL    LL    LL    LL    HH    LL    LL    LL    LL \\
-		ibus\_data &    UUUU    DD{D0}UU    DD{D1}DD{D2}UU    UU    DD{D3}DD{D4}DD{D5}UU \\
+		clock &         HCCC    CC    CC    CC    CC    CC    CCCC    CC    CC    CC \\
+		ibus\_read &    LLHH    LL    HH    HH    LL    HH    HHHH    HH    LL    LL \\
+		ibus\_address & UUDD{A0}UU    DD{A1}DD{A2}UU    DD{A3}DDDD{A4}DD{A5}UU    UU \\
+		ibus\_stall &   LLLL    LL    LL    LL    LL    LL    HHLL    LL    LL    LL \\
+		ibus\_data &    UUUU    DD{D0}UU    DD{D1}DD{D2}UU    UUDD{D3}DD{D4}DD{D5}UU \\
 	\end{tikztimingtable}
 	\caption{IF指令存储接口时序}
 	\label{tt:ifmem}
@@ -69,8 +69,8 @@ IF模块第三个上升沿读ibus\_data。
 \begin{signals}
 	output\_address & \sigout & 32 & 指令地址 \\ \hline
 	output\_instruction & \sigout & 32 & 指令数据 \\ \hline
-	output\_valid & \sigout & 32 & 指令数据有效 \\ \hline
-	output\_full & \sigin & 32 & FIFO满反馈 \\ \hline
+	output\_valid & \sigout & 1 & 指令数据有效 \\ \hline
+	output\_full & \sigin & 1 & FIFO满反馈 \\ \hline
 \end{signals}
 
 \subsubsection{时序}
@@ -83,11 +83,11 @@ IF模块需要向FIFO写入时，将数据送至output\_address及output\_instru
 \begin{figure}[h]
 	\centering
 	\begin{tikztimingtable}
-		clock &               HCCC    CCCC    CC    CC    CCCCCC    CC \\
-		output\_address &     UUDD{A0}UUDD{A1}DD{A2}DD{A3}UUUUDD{I4}UU \\
-		output\_instruction & UUDD{I0}UUDD{I1}DD{I2}DD{I3}UUUUDD{I4}UU \\
-		output\_valid &       LLHH    LLHH    HH    HH    LLLLHH    LL \\
-		output\_full &        LLLL    LLLL    LL    HH    HHLLLL    LL \\
+		clock &               HCCC    CCCC    CC    CCCCCC    CC    CC \\
+		output\_address &     UUDD{A0}UUDD{A1}DD{A2}DDDDDD{A3}DD{A4}UU \\
+		output\_instruction & UUDD{I0}UUDD{I1}DD{I2}DDDDDD{I3}DD{I4}UU \\
+		output\_valid &       LLHH    LLHH    HH    HHHHHH    HH    LL \\
+		output\_full &        LLLL    LLLL    LL    HHHHLL    LL    LL \\
 	\end{tikztimingtable}
 	\caption{IF FIFO接口时序}
 	\label{tt:iffifo}
@@ -96,8 +96,296 @@ IF模块需要向FIFO写入时，将数据送至output\_address及output\_instru
 \subsection{转移接口}
 
 \begin{signals}
-	branch\_address & \sigin & 32 & 跳转地址 \\ \hline
-	branch\_valid & \sigin & 32 & 跳转有效 \\ \hline
+	branch\_address & \sigin & 32 & 跳转目标 \\ \hline
+	branch\_inst\_addr & \sigin & 32 & 跳转指令地址 \\ \hline
+	branch\_valid & \sigin & 1 & 跳转有效 \\ \hline
 \end{signals}
+
+\section{ID}
+
+\subsection{时钟复位信号}
+
+\begin{signals}
+	clock & \sigin & 1 & 时钟 \\ \hline
+	reset & \sigin & 1 & 同步复位，高电平有效 \\ \hline
+\end{signals}
+
+\subsection{Regfile接口}
+
+\subsubsection{信号}
+
+\begin{signals}
+	reg\_s & \sigout & 5 & rs \\ \hline
+	reg\_t & \sigout & 5 & rt \\ \hline
+	reg\_id\_d & \sigout & 5 & 锁寄存器 \\ \hline
+	reg\_s\_data & \sigin & 32 & rs数据 \\ \hline
+	reg\_t\_data & \sigin & 32 & rt数据 \\ \hline
+	reg\_stall & \sigin & 1 & 暂停信号 \\ \hline
+\end{signals}
+
+\subsubsection{时序}
+
+参考图\ref{tt:idreg}。
+
+\begin{figure}[h]
+	\centering
+	\begin{tikztimingtable}
+		clock &        HCCC    CC     CC     CC    CC     CC     CC     CC \\
+		reg\_s &       UUDD{S0}DD{S1} DD{S2} DD{S3}UU     DD{S4} UU     UU \\
+		reg\_t &       UUDD{T0}DD{T1} DD{T2} DD{T3}UU     DD{T4} UU     UU \\
+		reg\_id\_d &   UUDD{D0}DD{T1} DD{D2} DD{D3}UU     DD{D4} UU     UU \\
+		reg\_s\_data & UUUU    DD{RS0}DD{RS1}UU    DD{RS2}DD{RS3}DD{RS4}UU \\
+		reg\_t\_data & UUUU    DD{RT0}DD{RT2}UU    DD{RT2}DD{RT3}DD{RT4}UU \\
+		reg\_stall &   LLLL    LL     LL     HH    LL     LL     LL     LL \\
+	\end{tikztimingtable}
+	\caption{ID Regfile接口时序}
+	\label{tt:idreg}
+\end{figure}
+
+\subsection{上级FIFO接口}
+
+\begin{signals}
+	input\_address & \sigin & 32 & 指令地址 \\ \hline
+	input\_instruction & \sigin & 32 & 指令数据 \\ \hline
+	input\_empty & \sigin & 1 & FIFO空反馈 \\ \hline
+	input\_enable & \sigout & 1 & 数据请求 \\ \hline
+\end{signals}
+
+\subsection{下级FIFO接口}
+
+\begin{signals}
+	output\_operand1 & \sigout & 32 & 操作数1 \\ \hline
+	output\_operand2 & \sigout & 32 & 操作数2 \\ \hline
+	output\_writereg & \sigout & 5 & 写入寄存器 \\ \hline
+	output\_address & \sigout & 32 & 指令地址 \\ \hline
+	output\_instruction & \sigout & 32 & 指令数据 \\ \hline
+	output\_valid & \sigout & 1 & 数据有效 \\ \hline
+	output\_full & \sigin & 1 & FIFO满反馈 \\ \hline
+\end{signals}
+
+\section{EX}
+
+\subsection{时钟复位信号}
+
+\begin{signals}
+	clock & \sigin & 1 & 时钟 \\ \hline
+	reset & \sigin & 1 & 同步复位，高电平有效 \\ \hline
+\end{signals}
+
+\subsection{上级FIFO接口}
+
+\begin{signals}
+	input\_operand1 & \sigin & 32 & 操作数1 \\ \hline
+	input\_operand2 & \sigin & 32 & 操作数2 \\ \hline
+	input\_writereg & \sigin & 5 & 写入寄存器 \\ \hline
+	input\_address & \sigin & 32 & 指令地址 \\ \hline
+	input\_instruction & \sigin & 32 & 指令数据 \\ \hline
+	input\_empty & \sigin & 1 & FIFO空反馈 \\ \hline
+	input\_enable & \sigout & 1 & 数据请求 \\ \hline
+\end{signals}
+
+\subsection{下级FIFO接口}
+
+\begin{signals}
+	output\_result & \sigout & 32 & 结果 \\ \hline
+	output\_writereg & \sigout & 5 & 写入寄存器 \\ \hline
+	output\_valid & \sigout & 1 & 数据有效 \\ \hline
+	output\_full & \sigin & 1 & FIFO满反馈 \\ \hline
+\end{signals}
+
+\subsection{数据存储接口}
+
+\subsubsection{信号}
+
+\begin{signals}
+	dbus\_read & \sigout & 1 & 读使能 \\ \hline
+	dbus\_write & \sigout & 1 & 写使能 \\ \hline
+	dbus\_address & \sigout & 32 & 地址 \\ \hline
+	dbus\_byteenable & \sigout & 4 & 数据字节选择 \\ \hline
+	dbus\_data & \sigout & 32 & 写数据 \\ \hline
+	dbus\_stall & \sigin & 1 & 暂停 \\ \hline
+\end{signals}
+
+\subsubsection{时序}
+
+参考图\ref{tt:exdbus}。
+
+\begin{figure}[h]
+	\centering
+	\begin{tikztimingtable}
+		clock &            HCCC    CC    CC    CCCC    CC    CC \\
+		dbus\_read &       LLHH    HH    LL    LLLL    HH    LL \\
+		dbus\_write &      LLLL    LL    HH    HHHH    LL    LL \\
+		dbus\_address &    UUDD{A0}DD{A1}DD{A2}DDDD{A3}DD{A4}UU \\
+		dbus\_byteenable & UUDD{B0}DD{B1}DD{B2}DDDD{B3}DD{B4}UU \\
+		dbus\_data &       UUUU    UU    DD{D2}DDDD{D3}UU    UU \\
+		dbus\_stall &      LLLL    LL    LL    HHLL    LL    LL \\
+	\end{tikztimingtable}
+	\caption{EX数据存储接口时序}
+	\label{tt:exdbus}
+\end{figure}
+
+\subsection{转移输出接口}
+
+\begin{signals}
+	branch\_address & \sigout & 32 & 跳转目标 \\ \hline
+	branch\_inst\_addr & \sigout & 32 & 跳转指令地址 \\ \hline
+	branch\_valid & \sigout & 1 & 跳转有效 \\ \hline
+\end{signals}
+
+\section{MEM}
+
+\subsection{时钟复位信号}
+
+\begin{signals}
+	clock & \sigin & 1 & 时钟 \\ \hline
+	reset & \sigin & 1 & 同步复位，高电平有效 \\ \hline
+\end{signals}
+
+\subsection{上级FIFO接口}
+
+\begin{signals}
+	input\_result & \sigin & 32 & 结果 \\ \hline
+	input\_writereg & \sigin & 5 & 写入寄存器 \\ \hline
+	input\_empty & \sigin & 1 & FIFO空反馈 \\ \hline
+	input\_enable & \sigout & 1 & 数据请求 \\ \hline
+\end{signals}
+
+\subsection{下级FIFO接口}
+
+\begin{signals}
+	output\_result & \sigout & 32 & 结果 \\ \hline
+	output\_writereg & \sigout & 5 & 写入寄存器 \\ \hline
+	output\_valid & \sigout & 1 & 数据有效 \\ \hline
+	output\_full & \sigin & 1 & FIFO满反馈 \\ \hline
+\end{signals}
+
+\subsection{数据存储接口}
+
+\subsubsection{信号}
+
+\begin{signals}
+	dbus\_data & \sigin & 32 & 读数据 \\ \hline
+	dbus\_valid & \sigin & 1 & 数据有效 \\ \hline
+	dbus\_enable & \sigin & 1 & 数据请求 \\ \hline
+\end{signals}
+
+\subsubsection{时序}
+
+参考图\ref{tt:memdbus}。
+
+\begin{figure}[h]
+	\centering
+	\begin{tikztimingtable}
+		clock &        HCCCCC    CC    CCCC    CC    CCCC    CC \\
+		dbus\_data &   UUUUDD{D0}DD{D1}UUDD{D2}DD{D3}UUDD{D4}UU \\
+		dbus\_valid &  LLLLHH    HH    LLHH    HH    LLHH    LL \\
+		dbus\_enable & LLHHHH    HH    HHHH    LL    HHHH    HH \\
+	\end{tikztimingtable}
+	\caption{MEM数据存储接口时序}
+	\label{tt:memdbus}
+\end{figure}
+
+\section{WB}
+
+\subsection{时钟复位信号}
+
+\begin{signals}
+	clock & \sigin & 1 & 时钟 \\ \hline
+	reset & \sigin & 1 & 同步复位，高电平有效 \\ \hline
+\end{signals}
+
+\subsection{上级FIFO接口}
+
+\begin{signals}
+	input\_result & \sigin & 32 & 结果 \\ \hline
+	input\_writereg & \sigin & 5 & 写入寄存器 \\ \hline
+	input\_empty & \sigin & 1 & FIFO空反馈 \\ \hline
+	input\_enable & \sigout & 1 & 数据请求 \\ \hline
+\end{signals}
+
+\subsection{Regfile接口}
+
+\begin{signals}
+	reg\_wb\_d & \sigout & 5 & 写寄存器 \\ \hline
+	reg\_data & \sigout & 32 & 写数据 \\ \hline
+\end{signals}
+
+\section{Regfile}
+
+\subsection{时钟复位信号}
+
+\begin{signals}
+	clock & \sigin & 1 & 时钟 \\ \hline
+	reset & \sigin & 1 & 同步复位，高电平有效 \\ \hline
+\end{signals}
+
+\subsection{存储访问信号}
+
+\begin{signals}
+	reg\_s & \sigin & 5 & rs \\ \hline
+	reg\_t & \sigin & 5 & rt \\ \hline
+	reg\_id\_d & \sigin & 5 & 锁寄存器 \\ \hline
+	reg\_s\_data & \sigout & 32 & rs数据 \\ \hline
+	reg\_t\_data & \sigout & 32 & rt数据 \\ \hline
+	reg\_stall & \sigout & 1 & 暂停信号 \\ \hline
+	reg\_wb\_d & \sigin & 5 & 写寄存器 \\ \hline
+	reg\_d\_data & \sigin & 32 & 写数据 \\ \hline
+\end{signals}
+
+\section{指令Cache}
+
+\subsection{时钟复位信号}
+
+\begin{signals}
+	clock & \sigin & 1 & 时钟 \\ \hline
+	reset & \sigin & 1 & 同步复位，高电平有效 \\ \hline
+\end{signals}
+
+\subsection{读接口}
+
+\begin{signals}
+	ibus\_address & \sigin & 32 & 地址 \\ \hline
+	ibus\_read & \sigin & 1 & 读使能 \\ \hline
+	ibus\_data & \sigout & 32 & 读数据 \\ \hline
+	ibus\_stall & \sigout & 1 & 暂停 \\ \hline
+	ibus\_error & \sigout & 1 & 错误 \\ \hline
+\end{signals}
+
+\subsection{存储接口}
+
+AXI-Master接口
+
+\section{数据Cache}
+
+\subsection{时钟复位信号}
+
+\begin{signals}
+	clock & \sigin & 1 & 时钟 \\ \hline
+	reset & \sigin & 1 & 同步复位，高电平有效 \\ \hline
+\end{signals}
+
+\subsection{读写请求接口}
+
+\begin{signals}
+	dbus\_read & \sigin & 1 & 读使能 \\ \hline
+	dbus\_write & \sigin & 1 & 写使能 \\ \hline
+	dbus\_address & \sigin & 32 & 地址 \\ \hline
+	dbus\_byteenable & \sigin & 4 & 数据字节选择 \\ \hline
+	dbus\_data & \sigin & 32 & 写数据 \\ \hline
+	dbus\_stall & \sigout & 1 & 暂停 \\ \hline
+\end{signals}
+
+\subsection{读回应接口}
+
+\begin{signals}
+	dbus\_data & \sigout & 32 & 读数据 \\ \hline
+	dbus\_valid & \sigout & 1 & 数据有效 \\ \hline
+	dbus\_enable & \sigout & 1 & 数据请求 \\ \hline
+\end{signals}
+
+\subsection{存储接口}
+
+AXI-Master接口
 
 \end{document}
