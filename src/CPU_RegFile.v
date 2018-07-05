@@ -39,19 +39,34 @@ generate
 	end
 endgenerate
 
+/* saved input on stall */
+reg [regWidth - 1:0] s_reg_s;
+reg [regWidth - 1:0] s_reg_t;
+reg [regWidth - 1:0] s_reg_id_d;
+
+/* `current' input */
+wire c_reg_s;
+wire c_reg_t;
+wire c_reg_id_d;
+assign c_reg_s = reg_stall ? s_reg_s : reg_s;
+assign c_reg_t = reg_stall ? s_reg_t : reg_t;
+assign c_reg_id_d = reg_stall ? s_reg_id_d : reg_id_d;
+
+/* stalls */
 wire rs_stall;
 wire rs_data;
-assign rs_stall = reglocks[reg_s] == 1 && reg_wb_d != reg_s;
-assign rs_data = reg_wb_d == reg_s ? reg_d_data : registers[reg_s];
+assign rs_stall = reglocks[c_reg_s] == 1 && reg_wb_d != c_reg_s;
+assign rs_data = reg_wb_d == c_reg_s ? reg_d_data : registers[c_reg_s];
 
 wire rt_stall;
 wire rt_data;
-assign rt_stall = reglocks[reg_t] == 1 && reg_wb_d != reg_t;
-assign rt_data = reg_wb_d == reg_t ? reg_d_data : registers[reg_t];
+assign rt_stall = reglocks[c_reg_t] == 1 && reg_wb_d != c_reg_t;
+assign rt_data = reg_wb_d == c_reg_t ? reg_d_data : registers[c_reg_t];
 
 wire rd_stall;
-assign rd_stall = reglocks[reg_id_d] == 1 && reg_wb_d != reg_t;
+assign rd_stall = reglocks[c_reg_id_d] == 1 && reg_wb_d != c_reg_id_d;
 
+/* read & lock */
 always @(posedge clock)
 begin
 	if (reset) begin
@@ -60,22 +75,26 @@ begin
 	else begin
 		if (rs_stall || rt_stall || rd_stall) begin
 			reg_stall <= 1;
+			s_reg_s <= reg_s;
+			s_reg_t <= reg_t;
+			s_reg_id_d <= reg_id_d;
 		end
 		else begin
 			reg_s_data <= rs_data;
 			reg_t_data <= rt_data;
-			if (reg_id_d != 0) begin
-				reglocks[reg_id_d] <= 1;
+			if (c_reg_id_d != 0) begin
+				reglocks[c_reg_id_d] <= 1;
 			end
 		end
 	end
 end
 
+/* write & unlock */
 always @(posedge clock)
 begin
 	if (!reset && reg_wb_d != 0) begin
 		registers[reg_wb_d] <= reg_d_data;
-		if (reg_wb_d != reg_id_d) begin
+		if (reg_wb_d != c_reg_id_d) begin
 			reglocks[reg_wb_d] <= 0;
 		end
 	end
