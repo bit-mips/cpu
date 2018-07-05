@@ -10,6 +10,10 @@ module CPU_CombDecoder(
 	output [15:0] imm,
 	output [25:0] jaddr,
 
+	output [4:0] reg_read_1,
+	output [4:0] reg_read_2,
+	output [4:0] reg_write,
+
 	output is_ls, /* load/store */
 	output is_load,
 	output is_store,
@@ -82,5 +86,14 @@ wire is_nop_zerodst;
 assign is_nop_zerodst = !need_spec && ((is_alu_rfmt && rd == 5'b00000) ||
 	(is_alu_imm && rt == 5'b00000) || (is_shift && rd == 5'b00000));
 assign is_nop = is_nop_zerodst;
+
+assign reg_read_1 = (is_branch_jumpabs || is_exception) ? 0 : rs;
+assign reg_read_2 = (has_imm || has_jump) ? 0 : rt;
+assign reg_write = (opcode == 6'b000010 || is_store) ? 0 : /* J */
+	(opcode == 6'b000011 || (opcode == 6'b000001 && /* JAL */
+		(rt == 5'b10000 || rt == 5'b10001))) ? 31 : /* B{LT|GE}ZAL */
+	is_branch ? 0 : /* remaining branch instructions */
+	(is_load || is_alu_imm) ? rt : /* remaining i formats */
+	rd; /* remaining r formats */
 
 endmodule
