@@ -56,125 +56,129 @@ always @(posedge clock) begin
 end
 
 always @(posedge clock) begin
-	if(ibus_stall == 0) begin
-		case(read_state)
-			2'b00: begin
-				if(output_full == 1 && penddata[1] == 1) begin		//不可存储
-					read_state <= 2'b00;
-					ibus_read <= 0;
+	if (!reset) begin
+		if (ibus_stall == 0) begin
+			case(read_state)
+				2'b00: begin
+					if (output_full == 1 && pending[1] == 1) begin		//不可存储
+						read_state <= 2'b00;
+						ibus_read <= 0;
+					end
+					else begin
+						read_state <= 2'b01;
+						ibus_read <= 1;
+					end
 				end
-				else begin
-					read_state <= 2'b01;
-					ibus_read <= 1;
+				2'b01: begin
+					if(output_full == 1 && pending[0] == 1) begin		//不可存储
+						read_state <= 2'b10;
+						ibus_read <= 0;
+					end
+					else begin
+						read_state <= 2'b11;
+						ibus_read <= 1;
+						lastaddr <= ibus_address;
+					end
 				end
-			end
-			2'b01: begin
-				if(output_full == 1 && penddata[0] == 1) begin		//不可存储
-					read_state <= 2'b10;
-					ibus_read <= 0;
+				2'b10: begin
+					if(output_full == 1 && pending[1] == 1) begin		//不可存储
+						read_state <= 2'b00;
+						ibus_read <= 0;
+					end
+					else begin
+						read_state <= 2'b01;
+						ibus_read <= 1;
+					end
 				end
-				else begin
-					read_state <= 2'b11;
-					ibus_read <= 1;
-					lastaddr <= ibus_address;
+				2'b11: begin
+					if(output_full == 1 && pending[0] == 1) begin		//不可存储
+						read_state <= 2'b10;
+						ibus_read <= 0;
+					end
+					else begin
+						read_state <= 2'b11;
+						ibus_read <= 1;
+					end
 				end
-			end
-			2'b10: begin
-				if(output_full == 1 && penddata[1] == 1) begin		//不可存储
-					read_state <= 2'b00;
-					ibus_read <= 0;
-				end
-				else begin
-					read_state <= 2'b01;
-					ibus_read <= 1;
-				end
-			end
-			2'b11: begin
-				if(output_full == 1 && penddata[0] == 1) begin		//不可存储
-					read_state <= 2'b10;
-					ibus_read <= 0;
-				end
-				else begin
-					read_state <= 2'b11;
-					ibus_read <= 1;
-				end
-			end
-			default:
-		endcase
+				default:
+			endcase
+		end
 	end
 end
 
 always @(posedge clock) begin
-	if(output_full == 0) begin
-		if(pending[0] == 1) begin
-			output_address <= pendaddr[0];
-			output_instruction <= penddata[0];
-			output_valid <= 1;
-			pending[0] <= 0;
-			if(pending[1] == 1) begin
-				pendaddr[0] <= pendaddr[1];
-				penddata[0] <= penddata[1];
-				pending[1] <= 0;
+	if(!reset) begin
+		if(output_full == 0) begin
+			if(pending[0] == 1) begin
+				output_address <= pendaddr[0];
+				output_instruction <= penddata[0];
+				output_valid <= 1;
 				pending[0] <= 0;
-			end
-			case(read_state)
-				2'b10: begin
+				if(pending[1] == 1) begin
+					pendaddr[0] <= pendaddr[1];
+					penddata[0] <= penddata[1];
+					pending[1] <= 0;
+					pending[0] <= 0;
+				end
+				case(read_state)
+					2'b10: begin
 						pendaddr[1] <= ibus_address;
-						pendaddr[1] <= ibus_data;
+						penddata[1] <= ibus_data;
 						pending[1] <= 1;
 					end
-				end
-				2'b11: begin
-					pendaddr[1] <= lastaddr;
-					pendaddr[1] <= ibus_data;
-					pending[1] <= 1;
-				end
-				default:
-			endcase
+					2'b11: begin
+						pendaddr[1] <= lastaddr;
+						penddata[1] <= ibus_data;
+						pending[1] <= 1;
+					end
+					default:
+				endcase
+			end
+			else begin
+				case(read_state)
+					2'b10: begin
+						output_address <= ibus_address;
+						output_instruction <= ibus_data;
+						output_valid <= 1;
+					end
+					2'b11: begin
+						output_address <= lastaddr;
+						output_instruction <= ibus_data;
+						output_valid <= 1;
+					end
+					default:
+				endcase
+			end
 		end
 		else begin
 			case(read_state)
 				2'b10: begin
-					output_address <= _address;
-					output_instruction <= ibus_data;
+					if(pending[0] == 1) begin
+						pendaddr[1] <= ibus_address;
+						penddata[1] <= ibus_data;
+						pending[1] <= 1;
+					end
+					else begin
+						pendaddr[0] <= ibus_address;
+						pendaddr[0] <= ibus_data;
+						pending[0] <= 1;
+					end
 				end
 				2'b11: begin
-					output_address <= lastaddr;
-					output_instruction <= ibus_data;
+					if(pending[0] == 1) begin
+						pendaddr[1] <= ibus_address;
+						penddata[1] <= ibus_data;
+						pending[1] <= 1;
+					end
+					else begin
+						pendaddr[0] <= ibus_address;
+						penddata[0] <= ibus_data;
+						pending[0] <= 1;
+					end
 				end
 				default:
 			endcase
 		end
 	end
-	else begin
-		case(read_state)
-			2'b10: begin
-				if(pending[0] == 1) begin
-					pendaddr[1] <= ibus_address;
-					pendaddr[1] <= ibus_data;
-					pending[1] <= 1;
-				end
-				else begin
-					pendaddr[0] <= ibus_address;
-					pendaddr[0] <= ibus_data;
-					pending[0] <= 1;
-				end
-			end
-			2'b11: begin
-				if(pending[0] == 1) begin
-					pendaddr[1] <= ibus_address;
-					pendaddr[1] <= ibus_data;
-					pending[1] <= 1;
-				end
-				else begin
-					pendaddr[0] <= ibus_address;
-					pendaddr[0] <= ibus_data;
-					pending[0] <= 1;
-				end
-			end
-			default:
-		endcase
-	end
 end
-
-end module
+endmodule
