@@ -20,6 +20,67 @@
 
 \begin{document}
 
+\section{FIFO}
+
+\subsection{时钟复位信号}
+
+\begin{signals}
+	clock & \sigin & 1 & 时钟 \\ \hline
+	reset & \sigin & 1 & 同步复位，高电平有效 \\ \hline
+\end{signals}
+
+\subsection{输入接口}
+
+\subsubsection{信号}
+
+\begin{signals}
+	input\_data & \sigin & n & 数据 \\ \hline
+	input\_valid & \sigin & 1 & 数据有效 \\ \hline
+	input\_full & \sigout & 1 & 满反馈 \\ \hline
+\end{signals}
+
+\subsubsection{时序}
+
+参考图\ref{tt:fifoin}。
+
+\begin{figure}[h]
+	\centering
+	\begin{tikztimingtable}
+		clock (\sigin) &        HCCC    CCCC    CC    CCCCCC    CC    CC \\
+		input\_data (\sigin) &  UUDD{D0}UUDD{D1}DD{D2}DDDDDD{D3}DD{D4}UU \\
+		input\_valid (\sigin) & LLHH    LLHH    HH    HHHHHH    HH    LL \\
+		input\_full (\sigout) & LLLL    LLLL    LL    HHHHLL    LL    LL \\
+	\end{tikztimingtable}
+	\caption{FIFO输入接口时序}
+	\label{tt:fifoin}
+\end{figure}
+
+\subsection{输出接口}
+
+\subsubsection{信号}
+
+\begin{signals}
+	output\_data & \sigout & n & 数据 \\ \hline
+	output\_valid & \sigout & 1 & 数据有效 \\ \hline
+	output\_full & \sigin & 1 & 满反馈 \\ \hline
+\end{signals}
+
+\subsubsection{时序}
+
+参考图\ref{tt:fifoin}。
+
+\begin{figure}[h]
+	\centering
+	\begin{tikztimingtable}
+		clock (\sigin) &          HCCC    CCCC    CC    CCCCCC    CC    CC \\
+		output\_data (\sigout) &  UUDD{D0}UUDD{D1}DD{D2}DDDDDD{D3}DD{D4}UU \\
+		output\_valid (\sigout) & LLHH    LLHH    HH    HHHHHH    HH    LL \\
+		output\_full (\sigin)  &  LLLL    LLLL    LL    HHHHLL    LL    LL \\
+	\end{tikztimingtable}
+	\caption{FIFO输出接口时序}
+	\label{tt:fifoin}
+\end{figure}
+
 \section{IF}
 
 \subsection{时钟复位信号}
@@ -147,8 +208,8 @@ IF模块需要向FIFO写入时，将数据送至output\_address及output\_instru
 \begin{signals}
 	input\_address & \sigin & 32 & 指令地址 \\ \hline
 	input\_instruction & \sigin & 32 & 指令数据 \\ \hline
-	input\_empty & \sigin & 1 & FIFO空反馈 \\ \hline
-	input\_enable & \sigout & 1 & 数据请求 \\ \hline
+	input\_valid & \sigin & 1 & 数据有效 \\ \hline
+	input\_full & \sigout & 1 & 满反馈 \\ \hline
 \end{signals}
 
 \subsection{下级FIFO接口}
@@ -180,8 +241,8 @@ IF模块需要向FIFO写入时，将数据送至output\_address及output\_instru
 	input\_writereg & \sigin & 5 & 写入寄存器 \\ \hline
 	input\_address & \sigin & 32 & 指令地址 \\ \hline
 	input\_instruction & \sigin & 32 & 指令数据 \\ \hline
-	input\_empty & \sigin & 1 & FIFO空反馈 \\ \hline
-	input\_enable & \sigout & 1 & 数据请求 \\ \hline
+	input\_valid & \sigin & 1 & 数据有效 \\ \hline
+	input\_full & \sigout & 1 & 满反馈 \\ \hline
 \end{signals}
 
 \subsection{下级FIFO接口}
@@ -247,8 +308,8 @@ IF模块需要向FIFO写入时，将数据送至output\_address及output\_instru
 \begin{signals}
 	input\_result & \sigin & 32 & 结果 \\ \hline
 	input\_writereg & \sigin & 5 & 写入寄存器 \\ \hline
-	input\_empty & \sigin & 1 & FIFO空反馈 \\ \hline
-	input\_enable & \sigout & 1 & 数据请求 \\ \hline
+	input\_valid & \sigin & 1 & 数据有效 \\ \hline
+	input\_full & \sigout & 1 & 满反馈 \\ \hline
 \end{signals}
 
 \subsection{下级FIFO接口}
@@ -297,11 +358,13 @@ IF模块需要向FIFO写入时，将数据送至output\_address及output\_instru
 
 \subsection{上级FIFO接口}
 
+\subsubsection{信号}
+
 \begin{signals}
 	input\_result & \sigin & 32 & 结果 \\ \hline
 	input\_writereg & \sigin & 5 & 写入寄存器 \\ \hline
-	input\_empty & \sigin & 1 & FIFO空反馈 \\ \hline
-	input\_enable & \sigout & 1 & 数据请求 \\ \hline
+	input\_valid & \sigin & 1 & 数据有效 \\ \hline
+	input\_full & \sigout & 1 & 满反馈 \\ \hline
 \end{signals}
 
 \subsection{Regfile接口}
