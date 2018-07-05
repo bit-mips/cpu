@@ -130,13 +130,13 @@ IF模块需要向FIFO写入时，将数据送至output\_address及output\_instru
 \begin{figure}[h]
 	\centering
 	\begin{tikztimingtable}
-		clock &        HCCC    CC     CC     CC    CC     CC     CC     CC \\
-		reg\_s &       UUDD{S0}DD{S1} DD{S2} DD{S3}UU     DD{S4} UU     UU \\
-		reg\_t &       UUDD{T0}DD{T1} DD{T2} DD{T3}UU     DD{T4} UU     UU \\
-		reg\_id\_d &   UUDD{D0}DD{T1} DD{D2} DD{D3}UU     DD{D4} UU     UU \\
-		reg\_s\_data & UUUU    DD{RS0}DD{RS1}UU    DD{RS2}DD{RS3}DD{RS4}UU \\
-		reg\_t\_data & UUUU    DD{RT0}DD{RT2}UU    DD{RT2}DD{RT3}DD{RT4}UU \\
-		reg\_stall &   LLLL    LL     LL     HH    LL     LL     LL     LL \\
+		clock &        HCCC    CC     CC     CCCC     CC     CC     CC \\
+		reg\_s &       UUDD{S0}DD{S1} DD{S2} DDDD{S3} DD{S4} UU     UU \\
+		reg\_t &       UUDD{T0}DD{T1} DD{T2} DDDD{T3} DD{T4} UU     UU \\
+		reg\_id\_d &   UUDD{D0}DD{T1} DD{D2} DDDD{D3} DD{D4} UU     UU \\
+		reg\_s\_data & UUUU    DD{RS0}DD{RS1}UUDD{RS2}DD{RS3}DD{RS4}UU \\
+		reg\_t\_data & UUUU    DD{RT0}DD{RT2}UUDD{RT2}DD{RT3}DD{RT4}UU \\
+		reg\_stall &   LLLL    LL     LL     HHLL     LL     LL     LL \\
 	\end{tikztimingtable}
 	\caption{ID Regfile接口时序}
 	\label{tt:idreg}
@@ -267,7 +267,7 @@ IF模块需要向FIFO写入时，将数据送至output\_address及output\_instru
 \begin{signals}
 	dbus\_data & \sigin & 32 & 读数据 \\ \hline
 	dbus\_valid & \sigin & 1 & 数据有效 \\ \hline
-	dbus\_enable & \sigin & 1 & 数据请求 \\ \hline
+	dbus\_enable & \sigout & 1 & 数据请求 \\ \hline
 \end{signals}
 
 \subsubsection{时序}
@@ -277,10 +277,10 @@ IF模块需要向FIFO写入时，将数据送至output\_address及output\_instru
 \begin{figure}[h]
 	\centering
 	\begin{tikztimingtable}
-		clock &        HCCCCC    CC    CCCC    CC    CCCC    CC \\
-		dbus\_data &   UUUUDD{D0}DD{D1}UUDD{D2}DD{D3}UUDD{D4}UU \\
-		dbus\_valid &  LLLLHH    HH    LLHH    HH    LLHH    LL \\
-		dbus\_enable & LLHHHH    HH    HHHH    LL    HHHH    HH \\
+		clock &        HCCCCC    CC    CCCC    CCCC    CC    CC \\
+		dbus\_data &   UUUUDD{D0}DD{D1}UUDD{D2}DDDD{D3}DD{D4}UU \\
+		dbus\_valid &  LLLLHH    HH    LLHH    HHHH    HH    LL \\
+		dbus\_enable & LLHHHH    HH    HHHH    LLHH    HH    HH \\
 	\end{tikztimingtable}
 	\caption{MEM数据存储接口时序}
 	\label{tt:memdbus}
