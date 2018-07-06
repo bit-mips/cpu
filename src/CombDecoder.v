@@ -20,6 +20,7 @@ module CPU_CombDecoder(
 	output is_alu,
 	output is_alu_rfmt,
 	output is_alu_imm,
+	output is_lui,
 	output is_shift,
 	output is_mulmove,
 	output is_mulexec,
@@ -54,6 +55,7 @@ assign is_ls = is_load || is_store;
 
 assign is_alu_rfmt = opcode == 6'b000000 && funct[5:4] == 2'b10;
 assign is_alu_imm = opcode[5:3] == 3'b001;
+assign is_lui = opcode == 6'b001111;
 assign is_alu = is_alu_rfmt || is_alu_imm;
 
 assign is_shift = opcode == 6'b000000 && funct[5:3] == 3'b000;
