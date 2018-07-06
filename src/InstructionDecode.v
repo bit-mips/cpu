@@ -56,7 +56,7 @@ end
 
 always @(posedge clock) begin
 	if(reset == 0) begin
-		if(&& reg_stall == 0 && output_full == 0) begin
+		if(reg_stall == 0 && output_full == 0) begin
 			output_valid <= 1;
 			output_operand1 <= reg_s_data;
 			output_operand2 <= reg_t_data;
