@@ -83,7 +83,7 @@ assign could_branch = is_ls || is_branch || is_exception || is_cp0 ||
 	(is_alu_imm && opcode == 6'b001000);
 
 wire is_nop_zerodst;
-assign is_nop_zerodst = !need_spec && ((is_alu_rfmt && rd == 5'b00000) ||
+assign is_nop_zerodst = !could_branch && ((is_alu_rfmt && rd == 5'b00000) ||
 	(is_alu_imm && rt == 5'b00000) || (is_shift && rd == 5'b00000));
 assign is_nop = is_nop_zerodst;
 
