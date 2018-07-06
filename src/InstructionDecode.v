@@ -19,7 +19,7 @@ module CPU_InstructionDecode(
 		output reg [4:0]	output_writereg,
 		output reg [31:0]	output_instruction,
 		output reg 			output_valid,
-		input  reg			output_full
+		input  				output_full
 );
 
 always @(posedge clock) begin
@@ -299,7 +299,7 @@ always @(posedge clock) begin
 						output_operand2 <= {16'b0, inst[15:0]};
 					end
 					default: begin
-						output_operand2 <= {{16{1}}, inst[15:0]};
+						output_operand2 <= {{16{1'b1}}, inst[15:0]};
 					end
 				endcase
 			end
