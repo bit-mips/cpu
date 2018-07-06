@@ -3,48 +3,48 @@ module axi_cache(
 		input areset,		//低电平有效，异步复位
 		
 		//存取访问接口
-		input [31:0]		input_address,
-		input [31:0]		input_data,
-		input [3:0]			input_byteenable,
+		input 		[31:0]	input_address,
+		input 		[31:0]	input_data,
+		input 		[3:0]	input_byteenable,
 		input 				input_read,
 		input 				input_write,
 		
-		output			reg output_cache_stall,
-		output [31:0]	reg output_read_data,
-		output 			reg output_write_response,
+		output reg 			output_cache_stall,
+		output reg 	[31:0]	output_read_data,
+		output reg		 	output_write_response,
 		
 		//AXI
-		output [31:0]	reg  awaddr,
-		output [7:0]		 awlen,
-		output [2:0]		 awsize,
-		output 				 awburst,
-		output [2:0]		 awprot,
-		output			reg	awvalid,
+		output reg 	[31:0]	awaddr,
+		output 		[7:0]	awlen,
+		output 		[2:0]	awsize,
+		output 				awburst,
+		output 		[2:0]	awprot,
+		output reg			awvalid,
 		input				awready,
 		
-		output [31:0] 	reg wdata,
-		output			reg wstrb,
-		output			reg wlast,
-		output			reg wvalid,
+		output reg	[31:0] 	wdata,
+		output reg			wstrb,
+		output reg			wlast,
+		output reg			wvalid,
 		input				wready,
 		
 		input 				bresp,
 		input				bvalid,
-		output			reg bready,
+		output reg		 	bready,
 		
-		output [31:0]	reg araddr,
-		output [7:0]		arlen,
-		output [2:0]		arsize,
+		output reg	[31:0]	araddr,
+		output      [7:0]   arlen,
+		output		[2:0]   arsize,
 		output 				arburst,
-		output [2:0]		arprot,
-		output 			reg arvalid,
-		input				arready,
+		output      [2:0]	arprot,
+		output reg          arvalid,
+		input               arready,
 		
-		input  [31:0]		rdata,
+		input       [31:0]  rdata,
 		input				rresp,
 		input 				rlast,
 		input				rvalid,
-		output			reg rready
+		output reg			rready
 );
 
 reg [31:0] data;
@@ -52,7 +52,7 @@ reg [31:0] addr;
 reg [3:0]  byteenable;
 	
 always @(posedge aclk) begin
-	if(negedge areset) begin
+	if(!areset) begin
 		output_read_data <= 0;
 		output_cache_stall <= 0;
 		output_write_response <= 0;
