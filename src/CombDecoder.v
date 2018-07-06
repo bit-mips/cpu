@@ -18,11 +18,17 @@ module CPU_CombDecoder(
 	output is_load,
 	output is_store,
 	output is_alu,
+	output is_alu_rfmt,
+	output is_alu_imm,
 	output is_shift,
 	output is_mulmove,
 	output is_mulexec,
 	output is_mul,
 	output is_branch,
+	output is_branch_jumpreg,
+	output is_branch_jumpabs,
+	output is_branch_branchcmp,
+	output is_branch_branchequ,
 	output is_cp0,
 	output is_exception,
 
@@ -46,8 +52,6 @@ assign is_load = opcode[5:3] == 3'b100;
 assign is_store = opcode[5:3] == 3'b101;
 assign is_ls = is_load || is_store;
 
-wire is_alu_rfmt;
-wire is_alu_imm;
 assign is_alu_rfmt = opcode == 6'b000000 && funct[5:4] == 2'b10;
 assign is_alu_imm = opcode[5:3] == 3'b001;
 assign is_alu = is_alu_rfmt || is_alu_imm;
@@ -58,10 +62,6 @@ assign is_mulmove = opcode == 6'b000000 && funct[5:3] == 3'b010;
 assign is_mulexec = opcode == 6'b000000 && funct[5:3] == 3'b011;
 assign is_mul = is_mulmove || is_mulexec;
 
-wire is_branch_jumpreg;
-wire is_branch_jumpabs;
-wire is_branch_branchcmp;
-wire is_branch_branchequ;
 assign is_branch_jumpreg = opcode == 6'b000000 && funct[5:1] == 5'b00100;
 assign is_branch_jumpabs = opcode[5:1] == 5'b00001;
 assign is_branch_branchcmp = opcode == 6'b000001;
