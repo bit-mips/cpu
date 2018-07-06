@@ -34,7 +34,7 @@ always @(posedge clock) begin
 		
 		reg_s <= 0;
 		reg_t <= 0;
-		reg_id_d <= 0
+		reg_id_d <= 0;
 	end
 end
 
@@ -299,7 +299,7 @@ always @(posedge clock) begin
 						output_operand2 <= {16'b0, inst[15:0]};
 					end
 					default: begin
-						output_operand2 <= {16{1}, inst[15:0]};
+						output_operand2 <= {{16{1}}, inst[15:0]};
 					end
 				endcase
 			end
