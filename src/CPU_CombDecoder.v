@@ -30,7 +30,7 @@ module CPU_CombDecoder(
 
 	output has_imm, /* I format */
 	output has_jump, /* J format */
-	output could_branch, /* could cause branches or exceptions */
+	output could_branch /* could cause branches or exceptions */
 );
 
 assign opcode = inst[31:26];
