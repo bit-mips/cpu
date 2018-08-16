@@ -6,13 +6,13 @@ MIPS CPU
 
 本项目为 MIPS CPU， 采用Classical RISC Pipeline结构。
 
+## 目录介绍
+
 说明：soc_axi_func、soc_axi_perf、soft 文件夹中除mycpu子目录下为自实现cpu外，其余均为龙芯提供的soc框架代码。
 
-目录介绍
+*|-soc_axi_func/ 
 
-|-soc_axi_func/ 
-
-|     |--rtl/ 目录， SoC源码
+*|     |--rtl/ 目录， SoC源码
 
 |     |     |--soc_lite_top.v SoC的顶层
 
