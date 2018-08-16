@@ -12,7 +12,7 @@ MIPS CPU
 
 |-soc_axi_func/ 
 
-|[TAB]|--rtl/ 目录， SoC源码
+[TAB] |--rtl/ 目录， SoC源码
 
 |[TAB]|--soc_lite_top.v SoC的顶层
 
