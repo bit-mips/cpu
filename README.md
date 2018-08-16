@@ -12,13 +12,13 @@ MIPS CPU
 
 + -soc_axi_func/ 
 
-    ++ --rtl/ 目录， SoC源码
+    --rtl/ 目录， SoC源码
 
-    ++ --soc_lite_top.v SoC的顶层
+    --soc_lite_top.v SoC的顶层
     
-        +++ --myCPU / 目录，自实现 CPU 源码，调用的 Xilinx IP 的 xci 文件 
+         --myCPU / 目录，自实现 CPU 源码，调用的 Xilinx IP 的 xci 文件 
 
-        +++ --CONFREG/ 目录，confreg 模块，连接 CPU与开发板上数码管、拨码开关等 GPIO类设备 
+         --CONFREG/ 目录，confreg 模块，连接 CPU与开发板上数码管、拨码开关等 GPIO类设备 
 
 |     |     |--BRIDGE/ 目录，bridge_1x2 模块，CPU的 data sram接口分流去往 confreg 和 data_ram 
 
