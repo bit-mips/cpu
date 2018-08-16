@@ -12,9 +12,9 @@ MIPS CPU
 
 |-soc_axi_func/ 
 
-& emsp|--rtl/ 目录， SoC源码
+|[TAB]|--rtl/ 目录， SoC源码
 
-& emsp & emsp|--soc_lite_top.v SoC的顶层
+|[TAB]|--soc_lite_top.v SoC的顶层
 
 |     |     |--myCPU / 目录，自实现 CPU 源码，调用的 Xilinx IP 的 xci 文件 
 
