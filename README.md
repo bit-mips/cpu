@@ -69,7 +69,24 @@ MIPS CPU
 
 
 
++--soc_demo/ : 运行ucore操作系统的展示包。
+        
+   + --rtl/      : 项目源码
+   
+      + --myCPU/	：CPU设计源码
+   
+      + --Peripheral/           ：SoC外围设备源码
+  
+   + --run_vivado/              :目录 运行Vivado工程
+   
+      + --soc_demo.srcs 
 
+         + --constrs_1	:约束文件目录
+
+         + --sources_1	:block_design生成文件目录
+      
+   + --soc_demo.xpr	：Vivado2018.1 创建的 Vivado 工程，可直接打开并进行仿真、综合实现且无错 
+   
 + -soft/ 目录，功能测试和性能测试软件程序目录。
 
     + --func/ 目录， 89个功能点测试程序
