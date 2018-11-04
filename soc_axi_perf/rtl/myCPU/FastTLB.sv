@@ -193,8 +193,9 @@ begin
 				end
 				else begin
 					q_miss = 1;
-					pprogress = 0;
 				end
+				if (q_miss || q_ready)
+					pprogress = 0;
 			end
 		end
 	end

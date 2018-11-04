@@ -119,6 +119,7 @@ module mycpu
   wire axi_protocol_convert_0_M_AXI_WREADY;
   wire [3:0]axi_protocol_convert_0_M_AXI_WSTRB;
   wire axi_protocol_convert_0_M_AXI_WVALID;
+  
   wire [31:0]bit_mips_0_dbus_addr;
   wire [3:0]bit_mips_0_dbus_byteenable;
   wire bit_mips_0_dbus_read;
@@ -128,6 +129,21 @@ module mycpu
   wire bit_mips_0_ibus_read;
   wire bit_mips_0_output_flush;
   wire [4:0]bit_mips_0_output_stall;
+  wire bit_mips_0_ibus_exr_valid_if;
+  wire bit_mips_0_ibus_exr_valid_mem;
+  wire bit_mips_0_tlbi_ready;
+  wire bit_mips_0_tlbi_miss;
+  wire [31:0] bit_mips_0_tlbi_paddr;
+  wire bit_mips_0_tlbi_c;
+  wire bit_mips_0_tlbd_ready;
+  wire bit_mips_0_tlbd_miss;
+  wire [31:0] bit_mips_0_tlbd_paddr;
+  wire bit_mips_0_tlbd_c;
+  
+  
+  wire ibus_valid_gen_0_ibus_valid;
+  wire dbus_valid_gen_0_dbus_valid;
+  
   wire clock_0_1;
   wire cpu_axi_interface_0_data_addr_ok;
   wire cpu_axi_interface_0_data_data_ok;
@@ -170,6 +186,7 @@ module mycpu
   wire cpu_axi_interface_0_m0_axi_WREADY;
   wire [3:0]cpu_axi_interface_0_m0_axi_WSTRB;
   wire cpu_axi_interface_0_m0_axi_WVALID;
+  
   wire [31:0]dbus_sram_0_cpu_data_o;
   wire [31:0]dbus_sram_0_data_addr;
   wire dbus_sram_0_data_req;
@@ -177,6 +194,10 @@ module mycpu
   wire [31:0]dbus_sram_0_data_wdata;
   wire dbus_sram_0_data_wr;
   wire dbus_sram_0_stallreq;
+  wire dbus_sram_0_data_cache;
+  wire [3:0]dbus_sram_0_data_byteenable;        
+  
+  
   wire [31:0]ibus_sram_0_cpu_data_o;
   wire [31:0]ibus_sram_0_inst_addr;
   wire ibus_sram_0_inst_req;
@@ -184,6 +205,8 @@ module mycpu
   wire [31:0]ibus_sram_0_inst_wdata;
   wire ibus_sram_0_inst_wr;
   wire ibus_sram_0_stallreq;
+  wire ibus_sram_0_inst_cache;
+  
   wire [31:0]system_cache_0_M0_AXI_ARADDR;
   wire [1:0]system_cache_0_M0_AXI_ARBURST;
   wire [3:0]system_cache_0_M0_AXI_ARCACHE;
@@ -263,6 +286,8 @@ module mycpu
   assign m_axi_wlast = axi_protocol_convert_0_M_AXI_WLAST;
   assign m_axi_wstrb[3:0] = axi_protocol_convert_0_M_AXI_WSTRB;
   assign m_axi_wvalid = axi_protocol_convert_0_M_AXI_WVALID;
+  
+  
 axi_protocol_converter_0 axi_protocol_convert_0
        (.aclk(clock_0_1),
         .aresetn(Op1_0_1),
@@ -343,6 +368,8 @@ axi_protocol_converter_0 axi_protocol_convert_0
         .s_axi_wready(system_cache_0_M0_AXI_WREADY),
         .s_axi_wstrb(system_cache_0_M0_AXI_WSTRB),
         .s_axi_wvalid(system_cache_0_M0_AXI_WVALID));
+        
+        
 bit_mips bit_mips_0
        (.clock(clock_0_1),
         .dbus_addr(bit_mips_0_dbus_addr),
@@ -364,7 +391,34 @@ bit_mips bit_mips_0
         .int_req5(0),
         .output_flush(bit_mips_0_output_flush),
         .output_stall(bit_mips_0_output_stall),
-        .reset(~Op1_0_1));
+        .reset(~Op1_0_1),
+        .exr_valid_if(bit_mips_0_ibus_exr_valid_if),
+        .exr_valid_mem(bit_mips_0_ibus_exr_valid_mem),
+        .tlbi_ready(bit_mips_0_tlbi_ready),
+        .tlbi_miss(bit_mips_0_tlbi_miss),
+        .tlbi_paddr(bit_mips_0_tlbi_paddr),
+        .tlbi_c(bit_mips_0_tlbi_c),
+        .tlbd_ready(bit_mips_0_tlbd_ready),
+        .tlbd_miss(bit_mips_0_tlbd_miss),
+        .tlbd_paddr(bit_mips_0_tlbd_paddr),
+        .tlbd_c(bit_mips_0_tlbd_c));
+
+        
+ibus_valid_gen ibus_valid_gen_0( 
+        .ibus_read(bit_mips_0_ibus_read),
+        .tlbi_ready(bit_mips_0_tlbi_ready),
+        .tlbi_miss(bit_mips_0_tlbi_miss),
+        .exr_valid(bit_mips_0_ibus_exr_valid_if),
+        .ibus_valid(ibus_valid_gen_0_ibus_valid));
+
+dbus_valid_gen dbus_valid_gen_0(
+	.dbus_read(bit_mips_0_dbus_read),
+    	.dbus_write(bit_mips_0_dbus_write),
+    	.tlbd_miss(bit_mips_0_tlbd_miss),
+    	.tlbd_ready(bit_mips_0_tlbd_ready),
+    	.exr_valid(bit_mips_0_ibus_exr_valid_mem),
+    	.dbus_valid(dbus_valid_gen_0_dbus_valid));
+            
 cpu_axi_interface cpu_axi_interface_0
        (.clk(clock_0_1),
         .data_addr(dbus_sram_0_data_addr),
@@ -375,6 +429,8 @@ cpu_axi_interface cpu_axi_interface_0
         .data_size(dbus_sram_0_data_size),
         .data_wdata(dbus_sram_0_data_wdata),
         .data_wr(dbus_sram_0_data_wr),
+        .data_cache(dbus_sram_0_data_cache),
+        .data_byteenable(dbus_sram_0_data_byteenable),
         .inst_addr(ibus_sram_0_inst_addr),
         .inst_addr_ok(cpu_axi_interface_0_inst_addr_ok),
         .inst_data_ok(cpu_axi_interface_0_inst_data_ok),
@@ -383,6 +439,7 @@ cpu_axi_interface cpu_axi_interface_0
         .inst_size(ibus_sram_0_inst_size),
         .inst_wdata(ibus_sram_0_inst_wdata),
         .inst_wr(ibus_sram_0_inst_wr),
+        .inst_cache(ibus_sram_0_inst_cache), 
         .m0_axi_araddr(cpu_axi_interface_0_m0_axi_ARADDR),
         .m0_axi_arburst(cpu_axi_interface_0_m0_axi_ARBURST),
         .m0_axi_arcache(cpu_axi_interface_0_m0_axi_ARCACHE),
@@ -419,14 +476,17 @@ cpu_axi_interface cpu_axi_interface_0
         .m0_axi_wstrb(cpu_axi_interface_0_m0_axi_WSTRB),
         .m0_axi_wvalid(cpu_axi_interface_0_m0_axi_WVALID),
         .resetn(Op1_0_1));
+        
+        
 dbus_sram dbus_sram_0
        (.clock(clock_0_1),
-        .cpu_addr_i(bit_mips_0_dbus_addr),
+        .cpu_addr_i(bit_mips_0_tlbd_paddr),
         .cpu_byteenable_i(bit_mips_0_dbus_byteenable),
-        .cpu_ce_i(bit_mips_0_dbus_read | bit_mips_0_dbus_write),
+        .cpu_ce_i(dbus_valid_gen_0_dbus_valid),
         .cpu_data_i(bit_mips_0_dbus_wdata),
         .cpu_data_o(dbus_sram_0_cpu_data_o),
         .cpu_we_i(bit_mips_0_dbus_write),
+        .cpu_cache(bit_mips_0_tlbd_c),
         .data_addr(dbus_sram_0_data_addr),
         .data_addr_ok(cpu_axi_interface_0_data_addr_ok),
         .data_data_ok(cpu_axi_interface_0_data_data_ok),
@@ -435,15 +495,20 @@ dbus_sram dbus_sram_0
         .data_size(dbus_sram_0_data_size),
         .data_wdata(dbus_sram_0_data_wdata),
         .data_wr(dbus_sram_0_data_wr),
+        .data_cache(dbus_sram_0_data_cache),
+        .data_byteenable(dbus_sram_0_data_byteenable),
         .flush_i(bit_mips_0_output_flush),
         .reset(~Op1_0_1),
         .stall_i(bit_mips_0_output_stall),
         .stallreq(dbus_sram_0_stallreq));
+
+
 ibus_sram ibus_sram_0
        (.clock(clock_0_1),
-        .cpu_addr_i(bit_mips_0_ibus_addr),
-        .cpu_ce_i(bit_mips_0_ibus_read),
+        .cpu_addr_i(bit_mips_0_tlbi_paddr),
+        .cpu_ce_i(ibus_valid_gen_0_ibus_valid),
         .cpu_data_o(ibus_sram_0_cpu_data_o),
+        .cpu_cache(bit_mips_0_tlbi_c),
         .flush_i(bit_mips_0_output_flush),
         .inst_addr(ibus_sram_0_inst_addr),
         .inst_addr_ok(cpu_axi_interface_0_inst_addr_ok),
@@ -453,9 +518,12 @@ ibus_sram ibus_sram_0
         .inst_size(ibus_sram_0_inst_size),
         .inst_wdata(ibus_sram_0_inst_wdata),
         .inst_wr(ibus_sram_0_inst_wr),
+        .inst_cache(ibus_sram_0_inst_cache),
         .reset(~Op1_0_1),
         .stall_i(bit_mips_0_output_stall),
         .stallreq(ibus_sram_0_stallreq));
+        
+        
 system_cache_0 system_cache_0
        (.ACLK(clock_0_1),
         .ARESETN(Op1_0_1),

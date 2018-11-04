@@ -1,16 +1,16 @@
 module AsyncRAM #(
-	parameter WIDTH = 64,
+	parameter type TYPE = int,
 	parameter DEPTH = 64
 )(
 	input clock,
 
 	input [$clog2(DEPTH) - 1:0] addr,
 	input                       we,
-	input         [WIDTH - 1:0] wdata,
-	output        [WIDTH - 1:0] rdata
+	input                  TYPE wdata,
+	output                 TYPE rdata
 );
 
-bit [WIDTH - 1:0] ram [DEPTH - 1:0];
+TYPE ram [DEPTH - 1:0];
 
 assign rdata = ram[addr];
 

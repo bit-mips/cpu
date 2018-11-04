@@ -59,7 +59,8 @@ wire [5:0] func;
 assign op = input_inst[31:26];
 assign func = input_inst[5:0];
 
-assign stall_req_id = ex_isload || ex_ismfcp0 ? 1 : 0;
+assign stall_req_id = (ex_isload && (ex_write_reg == rs_addr || ex_write_reg == rt_addr))
+                      || (ex_ismfcp0 && (ex_write_reg == rs_addr || ex_write_reg == rt_addr)) ? 1 : 0;
 
 assign output_isdelayslot = current_isdelayslot;
 
@@ -80,10 +81,10 @@ function [4:0] get_write_reg(input [5:0] op_code, input [31:0] input_inst);
 		`EXE_ADDI, `EXE_ADDIU, `EXE_SLTI, `EXE_SLTIU: begin
 			get_write_reg = input_inst[20:16];                     //写入rt
 		end
-		`EXE_LB, `EXE_LBU, `EXE_LH, `EXE_LHU, `EXE_LW: begin
+		`EXE_LB, `EXE_LBU, `EXE_LH, `EXE_LHU, `EXE_LW, `EXE_LWL, `EXE_LWR, `EXE_LL: begin
 			get_write_reg = input_inst[20:16];
 		end
-		`EXE_SPECIAL: begin
+		`EXE_SPECIAL, `EXE_SPECIAL2: begin
             get_write_reg = input_inst[15:11];                     //写入rd
         end
 		default: begin
@@ -100,15 +101,10 @@ function [31:0] get_imm(input [5:0] op_code, input [31:0] input_inst);
 		`EXE_ORI, `EXE_ANDI, `EXE_XORI, `EXE_LUI: begin
 			get_imm = {16'b0, input_inst[15:0]};                    
 		end
-		`EXE_ADDI, `EXE_ADDIU, `EXE_SLTI, `EXE_SLTIU: begin
+		`EXE_ADDI, `EXE_ADDIU, `EXE_SLTI, `EXE_SLTIU,
+		`EXE_TEQI, `EXE_TGEI, `EXE_TGEIU, `EXE_TLTI, `EXE_TLTIU, `EXE_TNEI: begin
 			get_imm = {{16{input_inst[15]}}, input_inst[15:0]};                     
 		end
-		`EXE_LB, `EXE_LBU, `EXE_LH, `EXE_LHU, `EXE_LW: begin
-			get_imm = 0;
-		end
-		`EXE_SPECIAL: begin
-            get_imm = 0;                     
-        end
 		default: begin
 		     get_imm = 0;
 		end
@@ -230,14 +226,7 @@ function [31:0] get_branch_addr(input [5:0] op_code, input [5:0] func_code, inpu
                          input [31:0] addr_add_4, input [31:0] output_rsvalue);
      case (op_code)
         `EXE_SPECIAL: begin
-            /*case (func_code)
-                `EXE_JR, `EXE_JALR: begin*/
-                    get_branch_addr = output_rsvalue;
-                /*end
-                default: begin
-                    get_branch_addr = {{14{input_inst[15]}}, input_inst[15:0], {2{1'b0}}} + addr_add_4;
-                end
-            endcase*/
+            get_branch_addr = output_rsvalue;
         end
         `EXE_J, `EXE_JAL: begin
             get_branch_addr = {addr_add_4[31:28], input_inst[25:0], {2{1'b0}}};
@@ -266,10 +255,21 @@ function [6:0] get_invalid_instruction(input [5:0] op, input [5:0] func, input [
 			case (func) 
 				`EXE_AND, `EXE_OR, `EXE_XOR, `EXE_NOR,
 				`EXE_SLL, `EXE_SRL, `EXE_SRA, `EXE_SLLV, `EXE_SRLV, `EXE_SRAV,
-				`EXE_MFHI, `EXE_MFLO, `EXE_MTHI, `EXE_MTLO,
+				`EXE_MOVN, `EXE_MOVZ, `EXE_MFHI, `EXE_MFLO, `EXE_MTHI, `EXE_MTLO,
 				`EXE_ADD, `EXE_ADDU, `EXE_SUB, `EXE_SUBU, `EXE_SLT, `EXE_SLTU, `EXE_MULT, `EXE_MULTU, `EXE_DIV, `EXE_DIVU,
 				`EXE_JR, `EXE_JALR,
-				`EXE_SYSCALL, `EXE_BREAK: begin
+				`EXE_SYSCALL, `EXE_BREAK,
+				`EXE_TEQ, `EXE_TGE, `EXE_TGEU, `EXE_TLT, `EXE_TLTU, `EXE_TNE: begin
+					get_invalid_instruction = 7'b0;
+				end
+				default: begin
+					get_invalid_instruction = {1'b1, `CP0_EX_RESERVED};
+				end
+			endcase
+		end
+		`EXE_SPECIAL2: begin
+			case (func)
+				`EXE_CLO, `EXE_CLZ/*, `EXE_MUL, `EXE_MADD, `EXE_MADDU, `EXE_MSUB, `EXE_MSUBU*/: begin
 					get_invalid_instruction = 7'b0;
 				end
 				default: begin
@@ -279,7 +279,8 @@ function [6:0] get_invalid_instruction(input [5:0] op, input [5:0] func, input [
 		end
 		`EXE_REGIMM: begin
 			case (rt) 
-				`EXE_BLTZ, `EXE_BLTZAL, `EXE_BGEZ, `EXE_BGEZAL: begin
+				`EXE_BLTZ, `EXE_BLTZAL, `EXE_BGEZ, `EXE_BGEZAL,
+				`EXE_TEQI, `EXE_TGEI, `EXE_TGEIU, `EXE_TLTI, `EXE_TLTIU, `EXE_TNEI: begin
 					get_invalid_instruction = 7'b0;
 				end
 				default: begin
@@ -290,13 +291,19 @@ function [6:0] get_invalid_instruction(input [5:0] op, input [5:0] func, input [
 		`EXE_ANDI, `EXE_XORI, `EXE_LUI, `EXE_ORI,
 		`EXE_ADDI, `EXE_ADDIU, `EXE_SLTI, `EXE_SLTIU, 
 		`EXE_J, `EXE_JAL, `EXE_BEQ, `EXE_BGTZ, `EXE_BLEZ, `EXE_BNE,
-		`EXE_LB, `EXE_LBU, `EXE_LH, `EXE_LHU, `EXE_LW, `EXE_SB, `EXE_SH, `EXE_SW: begin
+		`EXE_LB, `EXE_LBU, `EXE_LH, `EXE_LHU, `EXE_LW, `EXE_SB, `EXE_SH, `EXE_SW,
+		`EXE_LWL, `EXE_LWR, `EXE_SWL, `EXE_SWR, `EXE_LL, `EXE_SC: begin
 			get_invalid_instruction = 7'b0;
 		end
 		default: begin
 			get_invalid_instruction = {1'b1, `CP0_EX_RESERVED};
 			if (op == `EXE_COP0) begin
-				if (rs == `EXE_MTC0 || rs == `EXE_MFC0 || (rs[4] == 1 && func == `EXE_ERET)) begin
+				if (rs == `EXE_MTC0 || rs == `EXE_MFC0) begin
+					get_invalid_instruction = 7'b0;
+				end
+				//rs[4] is input_inst[25]
+				else if (rs[4] == 1 && (func == `EXE_ERET || func == `EXE_TLBP
+						 || func == `EXE_TLBR || func == `EXE_TLBWI || func == `EXE_TLBWR)) begin
 					get_invalid_instruction = 7'b0;
 				end
 			end

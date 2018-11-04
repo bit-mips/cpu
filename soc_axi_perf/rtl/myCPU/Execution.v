@@ -10,7 +10,7 @@ module CPU_Execution(
 		input      [31:0] input_rtvalue,
 		input      [31:0] input_imm,
 		
-		//送入MEM模块
+		//閫佸叆MEM妯″潡
 		output     [31:0] output_write_data,
 		output     [4:0]  output_write_reg,
 		output     [31:0] output_inst,
@@ -18,32 +18,26 @@ module CPU_Execution(
 		output     [31:0] mem_acess_addr,
 		output     [31:0] mem_write_data,
 		
-//		//送入RAM模块
-//		output     [31:0] mem_addr,
-//		output            mem_read,
-//		output            mem_write,
-//		output     [31:0] mem_wdata,
-//		output     [3:0]  mem_byteenable, //写字节使能,传给访问的内存
 		
-		//stall_req 信号
+		//stall_req 淇″彿
 		output           stall_req_ex,
 		output           stall_req_exr,
 		
-		//hilo接口
+		//hilo鎺ュ彛
 		output            output_w_hi,
 		output     [31:0] output_hi_data,
 		output            output_w_lo,
 		output     [31:0] output_lo_data,
 		
-		output     [1:0]  output_hilo_addr,
-		input      [31:0] input_hilo_data,
+		output            output_r_hilo,
+		input      [63:0] input_hilo_data,
 		
 		input             mem_w_hi,
 		input     [31:0]  mem_hi_data,
 		input             mem_w_lo,
 		input     [31:0]  mem_lo_data,
 		
-		//除法器接口
+		//闄ゆ硶鍣ㄦ帴鍙�
 		output            start,
 		output            flag_unsigned,
 		output    [31:0]  operand1,
@@ -52,21 +46,21 @@ module CPU_Execution(
 		input     [63:0]  div_result,
 		input             div_done,
 		
-		//延迟槽
+		//寤惰繜妲�
 		input             input_isdelayslot,
 		output            output_isdelayslot,
 		
 		//load
 		output           ex_isload,
 		
-		//CP0 cmd接口
+		//CP0 cmd鎺ュ彛
 		output            cmd_valid,
 		output    [3:0]   cmd_op,
 		output    [4:0]   cmd_no,
 		output    [2:0]   cmd_sel,
 		output    [31:0]  cmd_data,
 		
-		//异常接口
+		//寮傚父鎺ュ彛
 		input             input_exr_valid,
 		input      [5:0]  input_exr_type,
 		input      [31:0] input_exr_a0,
@@ -80,15 +74,15 @@ module CPU_Execution(
 
 wire [5:0] op;
 wire [5:0] func;
+wire [63:0] mul_result;
 
 reg  is_ov;
 wire is_syscall;
 wire is_break;
 wire is_eret;
-//wire is_AdEL;
-//wire is_AdES;
+wire is_trap;
 
-//给出读取的hilo的值
+//缁欏嚭璇诲彇鐨刪ilo鐨勫��
 wire [31:0] hilo_data;
 
 assign op = input_inst[31:26];
@@ -98,21 +92,21 @@ assign output_isdelayslot = input_isdelayslot;
 assign output_addr = input_addr;
 assign output_inst = input_inst;
 
-//给出暂停信号
+//缁欏嚭鏆傚仠淇″彿
 assign stall_req_ex = (op == `EXE_SPECIAL && (func == `EXE_DIV || func == `EXE_DIVU)) ? !div_done : 0;
 assign stall_req_exr = output_exr_valid ? 1 : 0;
 
-//给出除法数据
+//缁欏嚭闄ゆ硶鏁版嵁
 assign operand1 = input_rsvalue;
 assign operand2 = input_rtvalue;
 assign start = (op == `EXE_SPECIAL && (func == `EXE_DIV || func == `EXE_DIVU)) ? 1 : 0;
 assign flag_unsigned = (op == `EXE_SPECIAL && func == `EXE_DIVU) ? 1 : 0;
 
 
-//计算写回寄存器的值
+//璁＄畻鍐欏洖瀵勫瓨鍣ㄧ殑鍊�
 function [31:0] get_write_data(input [5:0] op_code, input [5:0] func_code, 
                                input [31:0] input_rsvalue, input [31:0] input_rtvalue, input [31:0] hilo_data,
-                               input [31:0] input_imm, input [31:0] input_inst, input [31:0] input_addr);
+                               input [31:0] input_imm, input [31:0] input_inst, input [31:0] input_addr, input [63:0] mul_result);
     case (op_code) 
 		`EXE_ORI: begin
 			get_write_data = input_rsvalue | input_imm;
@@ -165,10 +159,10 @@ function [31:0] get_write_data(input [5:0] op_code, input [5:0] func_code,
 					get_write_data = input_rtvalue >> input_rsvalue[4:0];
 				end
 				`EXE_SRA: begin
-					get_write_data = $signed(input_rtvalue) >>> input_inst[10:6];          //算术右移
+					get_write_data = $signed(input_rtvalue) >>> input_inst[10:6];          //绠楁湳鍙崇Щ
 				end
 				`EXE_SRAV: begin
-					get_write_data = $signed(input_rtvalue) >>> input_rsvalue[4:0];       //算术右移
+					get_write_data = $signed(input_rtvalue) >>> input_rsvalue[4:0];       //绠楁湳鍙崇Щ
 				end
 				`EXE_ADD: begin
 					get_write_data = input_rsvalue + input_rtvalue;
@@ -194,6 +188,45 @@ function [31:0] get_write_data(input [5:0] op_code, input [5:0] func_code,
 				`EXE_MFHI, `EXE_MFLO: begin
 					get_write_data = hilo_data;
 				end
+				`EXE_MOVN, `EXE_MOVZ: begin
+					get_write_data = input_rsvalue;
+				end
+				default: begin
+					get_write_data = 0;
+				end
+			endcase
+		end
+		`EXE_SPECIAL2: begin
+			case (func)
+				`EXE_CLZ: begin
+					get_write_data = input_rsvalue[31] ? 0 : input_rsvalue[30] ? 1 : input_rsvalue[29] ? 2 :
+														 input_rsvalue[28] ? 3 : input_rsvalue[27] ? 4 : input_rsvalue[26] ? 5 :
+														 input_rsvalue[25] ? 6 : input_rsvalue[24] ? 7 : input_rsvalue[23] ? 8 : 
+														 input_rsvalue[22] ? 9 : input_rsvalue[21] ? 10 : input_rsvalue[20] ? 11 :
+														 input_rsvalue[19] ? 12 : input_rsvalue[18] ? 13 : input_rsvalue[17] ? 14 : 
+														 input_rsvalue[16] ? 15 : input_rsvalue[15] ? 16 : input_rsvalue[14] ? 17 : 
+														 input_rsvalue[13] ? 18 : input_rsvalue[12] ? 19 : input_rsvalue[11] ? 20 :
+														 input_rsvalue[10] ? 21 : input_rsvalue[9] ? 22 : input_rsvalue[8] ? 23 : 
+														 input_rsvalue[7] ? 24 : input_rsvalue[6] ? 25 : input_rsvalue[5] ? 26 : 
+														 input_rsvalue[4] ? 27 : input_rsvalue[3] ? 28 : input_rsvalue[2] ? 29 : 
+														 input_rsvalue[1] ? 30 : input_rsvalue[0] ? 31 : 32 ;
+				end
+				`EXE_CLO: begin
+					get_write_data = (~input_rsvalue[31] ? 0 : ~input_rsvalue[30] ? 1 : ~input_rsvalue[29] ? 2 :
+														 ~input_rsvalue[28] ? 3 : ~input_rsvalue[27] ? 4 : ~input_rsvalue[26] ? 5 :
+														 ~input_rsvalue[25] ? 6 : ~input_rsvalue[24] ? 7 : ~input_rsvalue[23] ? 8 : 
+														 ~input_rsvalue[22] ? 9 : ~input_rsvalue[21] ? 10 : ~input_rsvalue[20] ? 11 :
+														 ~input_rsvalue[19] ? 12 : ~input_rsvalue[18] ? 13 : ~input_rsvalue[17] ? 14 : 
+														 ~input_rsvalue[16] ? 15 : ~input_rsvalue[15] ? 16 : ~input_rsvalue[14] ? 17 : 
+														 ~input_rsvalue[13] ? 18 : ~input_rsvalue[12] ? 19 : ~input_rsvalue[11] ? 20 :
+														 ~input_rsvalue[10] ? 21 : ~input_rsvalue[9] ? 22 : ~input_rsvalue[8] ? 23 : 
+														 ~input_rsvalue[7] ? 24 : ~input_rsvalue[6] ? 25 : ~input_rsvalue[5] ? 26 : 
+														 ~input_rsvalue[4] ? 27 : ~input_rsvalue[3] ? 28 : ~input_rsvalue[2] ? 29 : 
+														 ~input_rsvalue[1] ? 30 : ~input_rsvalue[0] ? 31 : 32) ;
+				end
+				/*`EXE_MUL: begin
+					get_write_data = mul_result[31:0];
+				end*/
 				default: begin
 					get_write_data = 0;
 				end
@@ -207,6 +240,9 @@ function [31:0] get_write_data(input [5:0] op_code, input [5:0] func_code,
 				get_write_data = input_addr + 8;
 			end
 		end
+		`EXE_LWL, `EXE_LWR: begin
+			get_write_data = input_rtvalue;
+		end
 		default: begin
 			get_write_data = 0;
 		end
@@ -214,21 +250,21 @@ function [31:0] get_write_data(input [5:0] op_code, input [5:0] func_code,
 endfunction
 
 
-assign output_write_data = get_write_data(op, func, input_rsvalue, input_rtvalue, hilo_data, input_imm, input_inst, input_addr);
+assign output_write_data = get_write_data(op, func, input_rsvalue, input_rtvalue, hilo_data, input_imm, input_inst, input_addr, mul_result);
 
-//执行加载指令
+//鎵ц鍔犺浇鎸囦护
 assign mem_acess_addr = {{16{input_inst[15]}}, input_inst[15:0]} + input_rsvalue;
-assign ex_isload = (op == `EXE_LB || op == `EXE_LBU || op == `EXE_LH || op == `EXE_LHU || op == `EXE_LW) ? 1 :0;
+assign ex_isload = (op == `EXE_LB || op == `EXE_LBU || op == `EXE_LH || op == `EXE_LHU || op == `EXE_LW || op == `EXE_LL) ? 1 :0;
 
 function [31:0] get_mem_wdata(input [5:0] op_code, input [31:0] rtval);
     case (op_code) 
-        `EXE_SB: begin
+        `EXE_SB, `EXE_SC: begin
             get_mem_wdata = {4{rtval[7:0]}};
         end
         `EXE_SH: begin
             get_mem_wdata = {2{rtval[15:0]}};
         end
-        `EXE_SW: begin
+        `EXE_SW, `EXE_SWL, `EXE_SWR: begin
             get_mem_wdata = rtval;
         end
         default: begin
@@ -239,16 +275,16 @@ endfunction
 
 assign mem_write_data = get_mem_wdata(op, input_rtvalue);
 
-//给定需要写入的目的寄存器
+//缁欏畾闇�瑕佸啓鍏ョ殑鐩殑瀵勫瓨鍣�
 function [4:0] get_write_reg(input [5:0] op, input [5:0] func, input [4:0] rs, input [4:0] rt,
                              input [31:0] input_rsvalue, input [31:0] input_rtvalue,
                              input [31:0] input_imm, input [31:0] output_write_data, input [4:0] input_write_reg);
                              
      begin
-        get_write_reg = input_write_reg;				//默认写入的寄存器为上级传入的寄存器，使用阻塞式赋值
+        get_write_reg = input_write_reg;				//榛樿鍐欏叆鐨勫瘎瀛樺櫒涓轰笂绾т紶鍏ョ殑瀵勫瓨鍣紝浣跨敤闃诲寮忚祴鍊�
 		is_ov = 0;
         if (op == `EXE_SPECIAL && func == `EXE_ADD) begin
-			//判断加法是否溢出
+			//鍒ゆ柇鍔犳硶鏄惁婧㈠嚭
 			if ((input_rsvalue[31] == 0 && input_rtvalue[31] == 0 && output_write_data[31] == 1) 
 				|| (input_rsvalue[31] == 1 && input_rtvalue[31] == 1 && output_write_data[31] == 0)) begin
                 get_write_reg = 0;
@@ -256,13 +292,25 @@ function [4:0] get_write_reg(input [5:0] op, input [5:0] func, input [4:0] rs, i
 			end
         end
         else if (op == `EXE_SPECIAL && func == `EXE_SUB) begin
-            //判断减法是否溢出
+            //鍒ゆ柇鍑忔硶鏄惁婧㈠嚭
             if ((input_rsvalue[31] == 0 && input_rtvalue[31] == 1 && output_write_data[31] == 1) 
                 || (input_rsvalue[31] == 1 && input_rtvalue[31] == 0 && output_write_data[31] == 0)) begin
                 get_write_reg = 0;
 				is_ov = 1;
             end
         end
+		else if (op == `EXE_SPECIAL && func == `EXE_MOVN) begin
+			//movn, rs_value为0则改变rd的地址为0
+			if (input_rsvalue == 0) begin
+				get_write_reg = 0;
+			end
+		end
+		else if (op == `EXE_SPECIAL && func == `EXE_MOVN) begin
+			//movz, rs_value不为0则改变rd的地址为0
+			if (input_rsvalue != 0) begin
+				get_write_reg = 0;
+			end
+		end
         else if (op == `EXE_ADDI) begin
             if ((input_rsvalue[31] == 0 && input_imm[31] == 0 && output_write_data[31] == 1) 
                 || (input_rsvalue[31] == 1 && input_imm[31] == 1 && output_write_data[31] == 0)) begin
@@ -270,7 +318,7 @@ function [4:0] get_write_reg(input [5:0] op, input [5:0] func, input [4:0] rs, i
 				is_ov = 1;
             end
         end
-        else if (op == `EXE_JAL) begin                 //JAL固定写回31号寄存器，JALR直接使用上级传入的目的寄存器值
+        else if (op == `EXE_JAL) begin                 //JAL鍥哄畾鍐欏洖31鍙峰瘎瀛樺櫒锛孞ALR鐩存帴浣跨敤涓婄骇浼犲叆鐨勭洰鐨勫瘎瀛樺櫒鍊�
             get_write_reg = 31;
         end
         else if (op == `EXE_REGIMM && (rt == `EXE_BLTZAL || rt == `EXE_BGEZAL)) begin
@@ -284,9 +332,8 @@ endfunction
 
 assign output_write_reg = get_write_reg(op, func, input_inst[25:21], input_inst[20:16], input_rsvalue, input_rtvalue, input_imm, output_write_data, input_write_reg);
 
-//计算乘法的结果
-wire [63:0] mul_result;
-function [63:0] get_mul_result(input [5:0] op, input [5:0] func, input [31:0] rs_value, input [31:0] rt_value);
+//璁＄畻涔樻硶鐨勭粨鏋�
+function [63:0] get_mul_result(input [5:0] op, input [5:0] func, input [31:0] rs_value, input [31:0] rt_value, input [63:0] input_hilo_data);
 	case (op)
 		`EXE_SPECIAL: begin
 			case (func)
@@ -301,15 +348,37 @@ function [63:0] get_mul_result(input [5:0] op, input [5:0] func, input [31:0] rs
 				end
 			endcase
 		end
+		`EXE_SPECIAL2: begin
+			case (func)
+//				`EXE_MUL: begin
+//					get_mul_result = $signed(rs_value) * $signed(rt_value);
+//				end
+//				`EXE_MADD: begin
+//					get_mul_result = input_hilo_data + $signed(rs_value) * $signed(rt_value);
+//				end
+//				`EXE_MADDU: begin
+//					get_mul_result = input_hilo_data + $unsigned(rs_value) * $unsigned(rt_value);
+//				end
+//				`EXE_MSUB: begin
+//					get_mul_result = input_hilo_data - $signed(rs_value) * $signed(rt_value);
+//				end
+//				`EXE_MSUBU: begin
+//					get_mul_result = input_hilo_data - $unsigned(rs_value) * $unsigned(rt_value);
+//				end
+				default: begin
+					get_mul_result = 0;
+				end
+			endcase
+		end
 		default: begin
 			get_mul_result = 0;
 		end
 	endcase
 endfunction
 
-assign mul_result = get_mul_result(op, func, input_rsvalue, input_rtvalue);
+assign mul_result = get_mul_result(op, func, input_rsvalue, input_rtvalue, input_hilo_data);
 
-//计算写入hilo的地址和值
+//璁＄畻鍐欏叆hilo鐨勫湴鍧�鍜屽��
 function [1:0] get_w_hilo(input [5:0] op, input [5:0] func);
 	case (op)
 		`EXE_SPECIAL: begin
@@ -328,6 +397,16 @@ function [1:0] get_w_hilo(input [5:0] op, input [5:0] func);
 				end
 			endcase
 		end
+//		`EXE_SPECIAL2: begin
+//			case (func) 
+//				`EXE_MADD, `EXE_MADDU, `EXE_MSUB, `EXE_MSUBU: begin
+//					get_w_hilo = 2'b11;
+//				end
+//				default: begin
+//					get_w_hilo = 2'b00;
+//				end
+//			endcase
+//		end
 		default: begin
 			get_w_hilo = 2'b00;
 		end
@@ -354,20 +433,59 @@ function [63:0] get_hilo_wdata(input [5:0] op, input [5:0] func, input [31:0] in
 				end
 			endcase
 		end
+//		`EXE_SPECIAL2: begin
+//			case (op)
+//				`EXE_MADD, `EXE_MADDU, `EXE_MSUB, `EXE_MSUBU: begin
+//					get_hilo_wdata = mul_result;
+//				end
+//				default: begin
+//					get_hilo_wdata = 0;
+//				end
+//			endcase
+//		end
 		default: begin
 			get_hilo_wdata = 0;
-		end
+		end		
 	endcase
 endfunction
 
 assign {output_hi_data, output_lo_data} = get_hilo_wdata(op, func, input_rsvalue, mul_result, div_result);
 
-//给出读取hilo的地址
-assign output_hilo_addr = (op == `EXE_SPECIAL && func == `EXE_MFHI) ? 2'b10: (op == `EXE_SPECIAL && func == `EXE_MFLO) ? 2'b01 : 2'b00;
+//缁欏嚭璇诲彇hilo鐨勫湴鍧�
+
+function get_r_hilo(input [5:0] op, input [5:0] func);
+	case (op)
+		`EXE_SPECIAL: begin
+			case (func)
+				`EXE_MFHI, `EXE_MFLO: begin
+					get_r_hilo = 1;
+				end
+				default: begin
+					get_r_hilo = 0;
+				end
+			endcase
+		end
+		`EXE_SPECIAL2: begin
+			case (func)
+				`EXE_MADD, `EXE_MADDU, `EXE_MSUB, `EXE_MSUBU: begin
+					get_r_hilo = 1;
+				end
+				default: begin
+					get_r_hilo = 0;
+				end
+			endcase
+		end
+		default: begin
+			get_r_hilo = 0;
+		end
+	endcase
+endfunction
+
+assign output_r_hilo = get_r_hilo(op, func);
 
 
 
-function [31:0] get_hilo_rdata(input [5:0] op, input [5:0] func, input [31:0] input_hilo_data,
+function [31:0] get_hilo_rdata(input [5:0] op, input [5:0] func, input [63:0] input_hilo_data,
                                input mem_w_hi, input [31:0] mem_hi_data,
                                input mem_w_lo, input [31:0] mem_lo_data);
 	case (op)
@@ -378,7 +496,7 @@ function [31:0] get_hilo_rdata(input [5:0] op, input [5:0] func, input [31:0] in
 						get_hilo_rdata = mem_hi_data;
 					end
 					else begin
-						get_hilo_rdata = input_hilo_data;
+						get_hilo_rdata = input_hilo_data[63:32];
 					end
 				end
 				`EXE_MFLO: begin
@@ -386,7 +504,7 @@ function [31:0] get_hilo_rdata(input [5:0] op, input [5:0] func, input [31:0] in
 						get_hilo_rdata = mem_lo_data;
 					end
 					else begin
-						get_hilo_rdata = input_hilo_data;
+						get_hilo_rdata = input_hilo_data[31:0];
 					end
 				end
 				default: begin
@@ -402,30 +520,174 @@ endfunction
 
 assign hilo_data = get_hilo_rdata(op, func, input_hilo_data, mem_w_hi, mem_hi_data, mem_w_lo, mem_lo_data);
 
-//给出CP0 cmd 操作
-assign cmd_valid = (op == `EXE_COP0 && (input_inst[25:21] == `EXE_MTC0 || input_inst[25:21] == `EXE_MFC0)) ? 1 : 0;
-assign cmd_op = (input_inst[25:21] == `EXE_MTC0) ? `CP0_CMD_WRITEREG : `CP0_CMD_READREG;
+//缁欏嚭CP0 cmd 鎿嶄綔
+function get_cmdvalid(input [31:0] input_inst);
+	case (input_inst[31:26])
+		`EXE_COP0: begin
+			if (input_inst[25:21] == `EXE_MTC0 || input_inst[25:21] == `EXE_MFC0) begin
+				get_cmdvalid = 1;
+			end
+			else if (input_inst[25] == 1) begin
+				if (input_inst[5:0] == `EXE_TLBP || input_inst[5:0] == `EXE_TLBR || input_inst[5:0] == `EXE_TLBWI || input_inst[5:0] == `EXE_TLBWR) begin
+					get_cmdvalid = 1;
+				end
+				else begin
+					get_cmdvalid = 0;
+				end
+			end
+			else begin
+				get_cmdvalid = 0;
+			end
+		end
+		default: begin
+			get_cmdvalid = 0;
+		end
+	endcase
+endfunction
+
+assign cmd_valid = get_cmdvalid(input_inst);
+
+function [3:0] get_cmdop(input [31:0] input_inst);
+	case (input_inst[31:26])
+		`EXE_COP0: begin
+			if (input_inst[25:21] == `EXE_MTC0) begin
+				get_cmdop = `CP0_CMD_WRITEREG;
+			end
+			else if (input_inst[25:21] == `EXE_MFC0) begin
+				get_cmdop = `CP0_CMD_READREG;
+			end
+			else if (input_inst[25] == 1) begin
+				if (input_inst[5:0] == `EXE_TLBP) begin
+					get_cmdop = `CP0_CMD_TLBPROBE;
+				end 
+				else if (input_inst[5:0] == `EXE_TLBR) begin
+					get_cmdop = `CP0_CMD_TLBREAD;
+				end
+				else if (input_inst[5:0] == `EXE_TLBWI) begin
+					get_cmdop = `CP0_CMD_TLBWI;
+				end
+				else if(input_inst[5:0] == `EXE_TLBWR) begin
+					get_cmdop = `CP0_CMD_TLBWR;
+				end
+				else begin
+					get_cmdop = 4'b1111;			//use 4'b1111 as invalid op 
+				end
+			end
+			else begin
+				get_cmdop = 4'b1111;
+			end
+		end
+		default: begin
+			get_cmdop = 4'b1111;
+		end
+	endcase
+endfunction
+
+assign cmd_op = get_cmdop(input_inst);
+
+//now only mtc0 and mfc0 will use next 3 args. so I directly assign them as the valud of args in mtc0 and mfc0
 assign cmd_no = input_inst[15:11];
 assign cmd_sel = input_inst[2:0];
 assign cmd_data = input_rtvalue;
 
 
-//判断异常类型
+//鍒ゆ柇寮傚父绫诲瀷
 assign is_syscall = (op == `EXE_SPECIAL && func == `EXE_SYSCALL) ? 1 : 0;
 assign is_break = (op == `EXE_SPECIAL && func == `EXE_BREAK) ? 1 : 0;
 assign is_eret = (op == `EXE_COP0 && func == `EXE_ERET && input_inst[25] == 1) ? 1 : 0;
 
-function [6:0] get_exception(input is_ov, input is_syscall, input is_break, input is_eret, input input_iskernel);
+function get_trap(input [5:0] op, input [5:0] func, input [4:0] rt, input [31:0] input_rsvalue, input [31:0] input_rtvalue, input [31:0] input_imm);
+	begin
+		get_trap = 0;
+		case (op) 
+			`EXE_SPECIAL: begin
+				case (func)
+					`EXE_TEQ: begin
+						if (input_rsvalue == input_rtvalue) begin
+							get_trap = 1;
+						end
+					end
+					`EXE_TGE: begin
+						if ($signed(input_rsvalue) >= $signed(input_rtvalue)) begin
+							get_trap = 1;
+						end
+					end
+					`EXE_TGEU: begin
+						if ($unsigned(input_rsvalue) >= $unsigned(input_rtvalue)) begin
+							get_trap = 1;
+						end
+					end
+					`EXE_TLT: begin
+						if ($signed(input_rsvalue) < $signed(input_rtvalue)) begin
+							get_trap = 1;
+						end
+					end
+					`EXE_TLTU: begin
+						if ($unsigned(input_rsvalue) < $unsigned(input_rtvalue)) begin
+							get_trap = 1;
+						end
+					end
+					`EXE_TNE: begin
+						if (input_rsvalue != input_rtvalue) begin
+							get_trap = 1;
+						end
+					end
+					default: begin
+						get_trap = 0;
+					end
+				endcase
+			end
+			`EXE_REGIMM: begin
+				case (rt)
+					`EXE_TEQI: begin
+						if (input_rsvalue == input_imm) begin
+							get_trap = 1;
+						end
+					end
+					`EXE_TGEI: begin
+						if ($signed(input_rsvalue) >= $signed(input_imm)) begin
+							get_trap = 1;
+						end
+					end
+					`EXE_TGEIU: begin
+						if ($unsigned(input_rsvalue) >= $unsigned(input_imm)) begin
+							get_trap = 1;
+						end
+					end
+					`EXE_TLTI: begin
+						if ($signed(input_rsvalue) < $signed(input_imm)) begin
+							get_trap = 1;
+						end
+					end
+					`EXE_TLTIU: begin
+						if ($unsigned(input_rsvalue) < $unsigned(input_imm)) begin
+							get_trap = 1;
+						end
+					end
+					`EXE_TNEI: begin
+						if (input_rsvalue != input_imm) begin
+							get_trap = 1;
+						end
+					end
+					default: begin
+						get_trap = 0;
+					end
+				endcase
+			end
+			default: begin
+				get_trap = 0;
+			end
+		endcase
+	end
+endfunction
+
+assign is_trap = get_trap(op, func, input_inst[20:16], input_rsvalue, input_rtvalue, input_imm);
+
+function [6:0] get_exception(input is_ov, input is_syscall, input is_break, input is_eret, input is_trap, input input_iskernel);
 	begin
 		if (is_ov) begin
 			get_exception = {1'b1, `CP0_EX_OVERFLOW};
 		end
-//		else if (is_AdEL) begin
-//			get_exception = {1'b1, `CP0_EX_MEM_AEL};
-//		end
-//		else if (is_AdES) begin
-//			get_exception = {1'b1, `CP0_EX_MEM_AES};		
-//		end
 		else if (is_syscall) begin
 			get_exception = {1'b1, `CP0_EX_SYSCALL};
 		end
@@ -440,6 +702,9 @@ function [6:0] get_exception(input is_ov, input is_syscall, input is_break, inpu
 				get_exception = {1'b1, `CP0_EX_CPUNUSABLE};
 			end	
 		end
+		else if (is_trap) begin
+			get_exception = {1'b1, `CP0_EX_TRAP};
+		end
 		else begin
 			get_exception = 0;
 		end
@@ -447,16 +712,12 @@ function [6:0] get_exception(input is_ov, input is_syscall, input is_break, inpu
 endfunction
 
 
-//异常传递
+//寮傚父浼犻��
 assign {output_exr_valid, output_exr_type} = input_exr_valid == 1 ? {input_exr_valid, input_exr_type}
-                                           : get_exception(is_ov, is_syscall, is_break, is_eret, input_iskernel);
+                                           : get_exception(is_ov, is_syscall, is_break, is_eret, is_trap, input_iskernel);
 
 function [31:0] get_exr_a0(input [5:0] output_exr_type, input is_eret, input input_iskernel);
 	begin
-//		if (output_exr_type == `CP0_EX_MEM_AEL || output_exr_type == `CP0_EX_MEM_AES) begin
-//			get_exr_a0 = mem_acess_addr;
-//		end
-//		else 
         if (is_eret && !input_iskernel) begin
 			get_exr_a0 = 0;
 		end

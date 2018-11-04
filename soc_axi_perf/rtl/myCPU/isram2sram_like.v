@@ -11,7 +11,8 @@ module ibus_sram(
 	//CPU
 	input                         cpu_ce_i,
 	input     [31:0]              cpu_addr_i,
-
+	input                         cpu_cache,
+	
 	output reg[31:0]              cpu_data_o,
 	output reg                    stallreq,
 
@@ -21,7 +22,8 @@ module ibus_sram(
     output    [1:0]               inst_size,	   
     output reg[31:0]              inst_addr,
     output    [31:0]              inst_wdata,
-
+	output reg                    inst_cache,
+	
     input     [31:0]              inst_rdata,
     input                         inst_addr_ok,
     input                         inst_data_ok    
@@ -45,6 +47,7 @@ always @ (posedge clock) begin
 		ahb_state <= AHB_IDLE;
 		inst_req <= 0;
 		inst_addr <= 0;
+		inst_cache <= 0;
 		rd_buf <= 0;
 		is_flush <= 0;
 	end else begin
@@ -54,35 +57,42 @@ always @ (posedge clock) begin
 					ahb_state <= AHB_BUSY;
 					inst_req <= 1;
 					inst_addr <= cpu_addr_i;
+					inst_cache <= cpu_cache;
 					rd_buf <= 0;
 				end							
 			end
 			AHB_BUSY: begin
 				if (inst_data_ok == 1'b1) begin 				
-					if(stall_i != 5'b00000) begin
+					if(stall_i != 5'b00000 && !flush_i) begin
 						ahb_state <= AHB_WAIT_FOR_STALL;
 					end		
 					else begin
 						ahb_state <= AHB_IDLE;
 					end
-					
-					rd_buf <= inst_rdata;	
+					if (!flush_i) begin
+						rd_buf <= inst_rdata;
+					end	
 				end 
 
 				else if(flush_i == 1) begin
-				    ahb_state <= AHB_WAIT_FOR_RETURN;
+				    	ahb_state <= AHB_WAIT_FOR_RETURN;
 					inst_addr <= 0;
+					inst_cache <= 0;
 					rd_buf <= 0;
 					is_flush <= 1;
+					if (inst_addr_ok == 1'b1) begin
+						inst_req <= 0;	
+					end
 				end
 
 				else if (inst_addr_ok == 1'b1) begin	
 					inst_req <= 0;		
 					inst_addr <= 0;	
+					inst_cache <= 0;
 				end
 			end
 			AHB_WAIT_FOR_STALL:		begin
-				if(stall_i == 5'b00000) begin
+				if(stall_i == 5'b00000 || flush_i) begin
 					ahb_state <= AHB_IDLE;
 				end
 			end
@@ -90,6 +100,7 @@ always @ (posedge clock) begin
 				if (inst_addr_ok == 1'b1) begin
 					inst_req <= 0;		
 					inst_addr <= 0;	
+					inst_cache <= 0;
 				end
 				else if (inst_data_ok == 1'b1) begin
 					ahb_state <= AHB_IDLE;
@@ -121,7 +132,7 @@ always @ (*) begin
 				end
 			end
 			AHB_BUSY:		begin
-				if(inst_data_ok == 1'b1) begin
+				if(inst_data_ok == 1'b1 && !flush_i) begin
 					stallreq <= 0;
 					cpu_data_o <= inst_rdata; 						
 				end else begin

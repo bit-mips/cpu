@@ -171,7 +171,8 @@ int pcnt;
 
 always @(posedge clock)
 begin
-	p_miss = 0;
+	bit miss;
+	miss = 0;
 	if (p_valid) begin
 		if (p_ready) begin
 			pcnt = 0;
@@ -181,7 +182,7 @@ begin
 				pcnt = pcnt + 1;
 			end
 			else begin
-				p_miss = 1;
+				miss = 1;
 				pcnt = 0;
 			end
 		end
@@ -189,6 +190,7 @@ begin
 	else begin
 		pcnt = 0;
 	end
+	p_miss <= miss;
 end
 
 endmodule

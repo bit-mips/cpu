@@ -1,0 +1,47 @@
+{
+   ExpandedHierarchyInLayout: "",
+   guistr: "# # String gsaved with Nlview 6.8.5  2018-01-30 bk=1.4354 VDI=40 GEI=35 GUI=JA:1.6 TLS
+#  -string -flagsOSRD
+preplace port vga_hsync -pg 1 -y 380 -defaultsOSRD
+preplace port DDR3_1 -pg 1 -y 20 -defaultsOSRD
+preplace port spi_sdo_0 -pg 1 -y 120 -defaultsOSRD
+preplace port spi_sck_0 -pg 1 -y 260 -defaultsOSRD
+preplace port sout_0 -pg 1 -y 220 -defaultsOSRD
+preplace port resetn -pg 1 -y 80 -defaultsOSRD
+preplace port clock -pg 1 -y 60 -defaultsOSRD
+preplace port spi_csn_0 -pg 1 -y 240 -defaultsOSRD
+preplace port MII_0 -pg 1 -y 60 -defaultsOSRD
+preplace port vga_clk -pg 1 -y 300 -defaultsOSRD
+preplace port MDIO_0 -pg 1 -y 40 -defaultsOSRD
+preplace port vga_vsync -pg 1 -y 400 -defaultsOSRD
+preplace port spi_sdi_0 -pg 1 -y 280 -defaultsOSRD
+preplace port sin_0 -pg 1 -y 100 -defaultsOSRD
+preplace portBus ledrg1 -pg 1 -y 160 -defaultsOSRD
+preplace portBus seg_csn -pg 1 -y 180 -defaultsOSRD
+preplace portBus ledr -pg 1 -y 120 -defaultsOSRD
+preplace portBus dotmtx_col -pg 1 -y 80 -defaultsOSRD
+preplace portBus btn_switch -pg 1 -y 40 -defaultsOSRD
+preplace portBus vga_c1 -pg 1 -y 320 -defaultsOSRD
+preplace portBus vga_c2 -pg 1 -y 340 -defaultsOSRD
+preplace portBus vga_c3 -pg 1 -y 360 -defaultsOSRD
+preplace portBus btn_step -pg 1 -y 20 -defaultsOSRD
+preplace portBus seg_num -pg 1 -y 200 -defaultsOSRD
+preplace portBus ledrg0 -pg 1 -y 140 -defaultsOSRD
+preplace portBus dotmtx_row -pg 1 -y 100 -defaultsOSRD
+preplace inst vga -pg 1 -lvl 1 -y 620 -defaultsOSRD
+preplace inst proc_sys_reset_0 -pg 1 -lvl 1 -y 100 -defaultsOSRD
+preplace inst flash -pg 1 -lvl 2 -y 700 -defaultsOSRD
+preplace inst core -pg 1 -lvl 2 -y 320 -defaultsOSRD
+preplace inst peri -pg 1 -lvl 2 -y 920 -defaultsOSRD
+preplace inst ddr -pg 1 -lvl 2 -y 530 -defaultsOSRD
+preplace inst axi_ethernetlite_0 -pg 1 -lvl 3 -y 80 -defaultsOSRD
+preplace inst system_ila_0 -pg 1 -lvl 1 -y 430 -defaultsOSRD
+preplace inst axi_interconnect_0 -pg 1 -lvl 3 -y 300 -defaultsOSRD
+preplace inst clk_wiz_0 -pg 1 -lvl 2 -y 100 -defaultsOSRD
+preplace inst axi_interconnect_1 -pg 1 -lvl 3 -y 700 -defaultsOSRD
+preplace inst axi_interconnect_2 -pg 1 -lvl 3 -y 1080 -defaultsOSRD
+preplace inst system_cache_0 -pg 1 -lvl 1 -y 270 -defaultsOSRD
+levelinfo -pg 1 0 200 540 850 1020 -top 0 -bot 1220
+",
+}
+

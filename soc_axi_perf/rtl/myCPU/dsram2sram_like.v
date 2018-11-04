@@ -12,6 +12,7 @@ module dbus_sram(
 	input                         cpu_ce_i,
 	input     [31:0]              cpu_data_i,
 	input     [31:0]              cpu_addr_i,
+	input                         cpu_cache,
 	input                         cpu_we_i,
 	input     [3:0]               cpu_byteenable_i,
 	output reg[31:0]              cpu_data_o,
@@ -22,7 +23,9 @@ module dbus_sram(
     output  reg                   data_req,
     output  reg                   data_wr,
     output  reg[1 :0]             data_size,
+	output     [3:0]              data_byteenable,
     output  reg[31:0]             data_addr,
+	output  reg                   data_cache,
     output  reg[31:0]             data_wdata,
     input      [31:0]             data_rdata,
     input                         data_addr_ok,
@@ -60,6 +63,8 @@ always @(*) begin
       endcase
 end
 
+assign data_byteenable = cpu_byteenable_i;
+
 always @(*) begin
     case (cpu_byteenable_i)
         4'b1000: addr_off <= 3;
@@ -74,6 +79,7 @@ always @ (posedge clock) begin
 		ahb_state <= AHB_IDLE;
 		data_req <= 0;
 		data_addr <= 0;
+		data_cache <= 0;
 		data_wdata <= 0;
 		
         wr_buf <= 0;
@@ -85,6 +91,7 @@ always @ (posedge clock) begin
 					ahb_state <= AHB_BUSY;
 					data_req <= 1;
 					data_addr <= cpu_addr_i + addr_off;
+					data_cache <= cpu_cache;
 					data_wr <= cpu_we_i;
 					data_wdata <= cpu_data_i;
                     wr_buf <= cpu_data_i;

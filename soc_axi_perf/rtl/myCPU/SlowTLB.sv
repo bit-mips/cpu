@@ -40,7 +40,7 @@ TLBEntryGroup wrgroup;
 
 assign w_ready = we;
 
-AsyncRAM #($bits(TLBEntryGroup), GROUPS) mem (
+AsyncRAM #(TLBEntryGroup, GROUPS) mem (
 	.clock(clock),
 	.addr(ridx),
 	.we(we),

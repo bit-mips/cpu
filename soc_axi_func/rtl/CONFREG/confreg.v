@@ -44,7 +44,7 @@ THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //   > Author      : LOONGSON
 //   > Date        : 2017-08-04
 //*************************************************************************
-`define RANDOM_SEED {7'b1010101,16'h01FF}
+`define RANDOM_SEED {7'b0000111,16'h0003}
 
 `define CR0_ADDR       16'h8000   //32'hbfaf_8000 
 `define CR1_ADDR       16'h8004   //32'hbfaf_8004 

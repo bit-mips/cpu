@@ -1,8 +1,8 @@
 module hilo(
 	input             clock,
 	
-	input [1:0]       r_addr,
-	output[31:0]      r_data,
+	input             r_hilo,
+	output[63:0]      r_data,
 	
 	input             w_hi,
 	input [31:0]      hi_data,
@@ -14,29 +14,24 @@ module hilo(
 reg [31:0] lo;  //对应地址为 01
 reg [31:0] hi;  //对应地址为 10
 
-function [31:0] get_read_data(input [1:0] r_addr, input w_hi, input [31:0] hi_data, input w_lo, input [31:0] lo_data);
-	if (r_addr == 2'b10) begin
+function [63:0] get_read_data(input w_hi, input [31:0] hi_data, input w_lo, input [31:0] lo_data);
+	begin
 		if (w_hi) begin
-			get_read_data = hi_data;
+			get_read_data[63:32] = hi_data;
 		end
 		else begin
-			get_read_data = hi;
+			get_read_data[63:32] = hi;
 		end
-	end
-	else if (r_addr == 2'b01) begin
 		if (w_lo) begin
-			get_read_data = lo_data;
+			get_read_data[31:0] = lo_data;	
 		end
 		else begin
-			get_read_data = lo;
+			get_read_data[31:0] = lo;			
 		end
-	end
-	else begin
-		get_read_data = 0;
 	end
 endfunction
 
-assign r_data = get_read_data(r_addr, w_hi, hi_data, w_lo, lo_data);
+assign r_data = r_hilo ? get_read_data(w_hi, hi_data, w_lo, lo_data) : 0;
 
 always @(posedge clock) begin
 	if (w_hi) begin

@@ -3,14 +3,14 @@
 <!--                                                         -->
 <!-- Copyright 1986-2018 Xilinx, Inc. All Rights Reserved.   -->
 
-<Project Version="7" Minor="36" Path="C:/Users/User/Desktop/subm/soc_axi_func/run_vivado/mycpu_prj1/mycpu.xpr">
+<Project Version="7" Minor="36" Path="/home/user/Desktop/BIT_1_zhuweipu/soc_axi_func/run_vivado/mycpu_prj1/mycpu.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
     <Option Name="Id" Val="8de8692e6f7648c084645fde77f29b66"/>
     <Option Name="Part" Val="xc7a200tfbg676-2"/>
-    <Option Name="CompiledLibDir" Val="D:/Modeltech_pe_edu_10.4a/xilinx_lib"/>
+    <Option Name="CompiledLibDir" Val="$PPRDIR/../../../../../Modeltech_pe_edu_10.4a/xilinx_lib"/>
     <Option Name="CompiledLibDirXSim" Val=""/>
-    <Option Name="CompiledLibDirModelSim" Val="D:/Modeltech_pe_edu_10.4a/xilinx_lib"/>
+    <Option Name="CompiledLibDirModelSim" Val="$PPRDIR/../../../../../Modeltech_pe_edu_10.4a/xilinx_lib"/>
     <Option Name="CompiledLibDirQuesta" Val="$PCACHEDIR/compile_simlib/questa"/>
     <Option Name="CompiledLibDirIES" Val="$PCACHEDIR/compile_simlib/ies"/>
     <Option Name="CompiledLibDirXcelium" Val="$PCACHEDIR/compile_simlib/xcelium"/>
@@ -25,25 +25,25 @@
     <Option Name="IPCachePermission" Val="disable"/>
     <Option Name="EnableCoreContainer" Val="FALSE"/>
     <Option Name="CreateRefXciForCoreContainers" Val="FALSE"/>
-    <Option Name="IPUserFilesDir" Val="$PPRDIR/../../../../../lab2/mycpu_verify/run_vivado/mycpu/mycpu.ip_user_files"/>
+    <Option Name="IPUserFilesDir" Val="$PPRDIR/../../rtl/myCPU/mycpu.ip_user_files"/>
     <Option Name="IPStaticSourceDir" Val="$PPRDIR/../../../../../lab2/mycpu_verify/run_vivado/mycpu/mycpu.ip_user_files/ipstatic"/>
     <Option Name="EnableBDX" Val="FALSE"/>
     <Option Name="DSAVendor" Val="xilinx"/>
     <Option Name="DSANumComputeUnits" Val="16"/>
-    <Option Name="WTXSimLaunchSim" Val="111"/>
+    <Option Name="WTXSimLaunchSim" Val="135"/>
     <Option Name="WTModelSimLaunchSim" Val="0"/>
     <Option Name="WTQuestaLaunchSim" Val="0"/>
     <Option Name="WTIesLaunchSim" Val="0"/>
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="59"/>
-    <Option Name="WTModelSimExportSim" Val="59"/>
-    <Option Name="WTQuestaExportSim" Val="59"/>
-    <Option Name="WTIesExportSim" Val="59"/>
-    <Option Name="WTVcsExportSim" Val="59"/>
-    <Option Name="WTRivieraExportSim" Val="59"/>
-    <Option Name="WTActivehdlExportSim" Val="59"/>
+    <Option Name="WTXSimExportSim" Val="66"/>
+    <Option Name="WTModelSimExportSim" Val="66"/>
+    <Option Name="WTQuestaExportSim" Val="66"/>
+    <Option Name="WTIesExportSim" Val="66"/>
+    <Option Name="WTVcsExportSim" Val="66"/>
+    <Option Name="WTRivieraExportSim" Val="66"/>
+    <Option Name="WTActivehdlExportSim" Val="66"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -68,13 +68,13 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/myCPU/defines.h">
+      <File Path="$PPRDIR/../../rtl/myCPU/CP0.svh">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/myCPU/CP0.svh">
+      <File Path="$PPRDIR/../../rtl/myCPU/defines.h">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -157,6 +157,13 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/../../rtl/myCPU/dbus_valid_gen.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/../../rtl/myCPU/div_uu.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -179,6 +186,13 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../rtl/myCPU/hilo.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../rtl/myCPU/ibus_valid_gen.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -234,13 +248,13 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/myCPU/CP0Types.svh">
+      <File Path="$PPRDIR/../../rtl/myCPU/TLBTypes.svh">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../rtl/myCPU/TLBTypes.svh">
+      <File Path="$PPRDIR/../../rtl/myCPU/CP0Types.svh">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -287,6 +301,12 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/../../../soft/memory_game/obj/axi_ram.coe">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
         <Option Name="TopModule" Val="soc_axi_lite_top"/>
@@ -302,6 +322,7 @@
         </FileInfo>
       </File>
       <Config>
+        <Option Name="TargetConstrsFile" Val="$PPRDIR/../soc_lite.xdc"/>
         <Option Name="ConstrsType" Val="XDC"/>
       </Config>
     </FileSet>
@@ -323,6 +344,7 @@
         <Option Name="TransportIntDelay" Val="0"/>
         <Option Name="SrcSet" Val="sources_1"/>
         <Option Name="xsim.simulate.log_all_signals" Val="true"/>
+        <Option Name="NLNetlistMode" Val="funcsim"/>
       </Config>
     </FileSet>
     <FileSet Name="axi_crossbar_1x2" Type="BlockSrcs" RelSrcDir="$PSRCDIR/axi_crossbar_1x2">
@@ -376,11 +398,17 @@
     <Simulator Name="Questa">
       <Option Name="Description" Val="Questa Advanced Simulator"/>
     </Simulator>
+    <Simulator Name="IES">
+      <Option Name="Description" Val="Incisive Enterprise Simulator (IES)"/>
+    </Simulator>
+    <Simulator Name="Xcelium">
+      <Option Name="Description" Val="Xcelium Parallel Simulator"/>
+    </Simulator>
+    <Simulator Name="VCS">
+      <Option Name="Description" Val="Verilog Compiler Simulator (VCS)"/>
+    </Simulator>
     <Simulator Name="Riviera">
       <Option Name="Description" Val="Riviera-PRO Simulator"/>
-    </Simulator>
-    <Simulator Name="ActiveHDL">
-      <Option Name="Description" Val="Active-HDL Simulator"/>
     </Simulator>
   </Simulators>
   <Runs Version="1" Minor="10">

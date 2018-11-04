@@ -17,9 +17,16 @@ module CPU_InstructionFetch(
 		
 		//异常和CP0接口
 		input      [31:0] resetVector,
-		output reg        exr_valid,
-		output reg [5:0]  exr_type,
-		output reg [31:0] exr_a0
+		output            exr_valid,
+		output     [5:0]  exr_type,
+		output     [31:0] exr_a0,
+		
+		//TLB
+		input             tlb_ready,
+		input             tlb_miss,
+		input             tlb_v,
+		input             tlb_kern,
+		input             iskernel
 );
 
 //localparam resetVector = 32'hbfc00000;
@@ -57,17 +64,58 @@ assign ibus_read = s_ibus_read && !reset;
 
 always @(posedge clock) begin
 	ibus_addr = get_addr(reset, resetVector, branch_valid, branch_addr, ibus_addr, stall);
-    if (ibus_addr[1:0] == 2'b00) begin
-		exr_valid = 0;
-		s_ibus_read = 1;
+    if (exr_valid && exr_type == `CP0_EX_IF_ADDRERR) begin
+		s_ibus_read = 0;
 	end
 	else begin
-		exr_valid = 1;
-		exr_type = `CP0_EX_IF_ADDRERR;
-		exr_a0 = ibus_addr;
-		s_ibus_read = 0;
+		s_ibus_read = 1;
 	end
 end
 
+function get_exrvalid(input [31:0] ibus_addr, input ibus_read, input tlb_miss, input tlb_ready, input tlb_v, input tlb_kern, input iskernel);
+	begin
+		if (ibus_addr[1:0] != 2'b00) begin
+			get_exrvalid = 1;
+		end
+		else if (ibus_read && tlb_miss == 1) begin
+			get_exrvalid = 1;
+		end
+		else if (ibus_read && tlb_ready && tlb_v == 0) begin
+			get_exrvalid = 1;
+		end
+		else if (ibus_read && tlb_ready && tlb_kern == 1 && iskernel == 0) begin
+			get_exrvalid = 1;
+		end
+		else begin
+			get_exrvalid = 0;
+		end
+	end
+endfunction
+
+assign exr_valid = get_exrvalid(ibus_addr, ibus_read, tlb_miss, tlb_ready, tlb_v, tlb_kern, iskernel);
+
+function [5:0] get_exrtype(input [31:0] ibus_addr, input ibus_read, input tlb_miss, input tlb_ready,  input tlb_v, input tlb_kern, input iskernel);
+	begin
+		if (ibus_addr[1:0] != 2'b00) begin
+			get_exrtype = `CP0_EX_IF_ADDRERR;
+		end
+		else if (ibus_read && tlb_miss == 1) begin
+			get_exrtype = `CP0_EX_IF_TLBMISS;
+		end
+		else if (ibus_read  && tlb_ready && tlb_v == 0) begin
+			get_exrtype = `CP0_EX_IF_TLBINV;
+		end
+		else if (ibus_read  && tlb_ready && tlb_kern == 1 && iskernel == 0) begin
+			get_exrtype = `CP0_EX_IF_ADDRERR;
+		end
+		else begin
+			get_exrtype = 6'b111111;
+		end
+	end
+endfunction
+
+assign exr_type = get_exrtype(ibus_addr, ibus_read, tlb_miss, tlb_ready, tlb_v, tlb_kern, iskernel);
+
+assign exr_a0 = ibus_addr;
 
 endmodule

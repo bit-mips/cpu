@@ -573,17 +573,11 @@ endfunction
 function void CMDFail(input Word resp);
 	cmd_resp = resp;
 	cmd_error = 1;
-	cmd_stall = 0;
 endfunction
 
 function void CMDSucceed(input Word resp);
 	cmd_resp = resp;
 	cmd_error = 0;
-	cmd_stall = 0;
-endfunction
-
-function void CMDStall;
-	cmd_stall = 1;
 endfunction
 
 function Word ReadRegister(input bit [4:0] no, input bit [2:0] sel);
@@ -795,7 +789,7 @@ function void CMDTLBProbe;
 			tlb_p_valid = 1;
 			tlb_p_ivpn2 = reg_vpn2;
 			tlb_p_iasid = reg_asid;
-			CMDStall();
+			//CMDStall(); async
 		end
 		else begin
 			if (tlb_p_ready) begin
@@ -809,6 +803,9 @@ function void CMDTLBProbe;
 				end
 				CMDSucceed(0);
 			end
+			else begin
+				//CMDStall();
+			end
 		end
 	end
 endfunction
@@ -820,7 +817,7 @@ function void CMDTLBRead;
 	else begin
 		if (tlb_r_index != reg_index) begin
 			tlb_r_index = reg_index;
-			CMDStall();
+			//CMDStall();
 		end
 		else begin
 			if (tlb_r_ready) begin
@@ -844,7 +841,7 @@ function void CMDTLBRead;
 				CMDSucceed(0);
 			end
 			else begin
-				CMDStall();
+				//CMDStall();
 			end
 		end
 	end
@@ -874,19 +871,43 @@ function void TLBWrite(input int index);
 			tlb_w_data.ps = reg_pagesize;
 			tlb_w_data.vpn2 = reg_vpn2;
 			tlb_w_data.asid = reg_asid;
-			CMDStall();
+			//CMDStall();
 		end
 		else begin
-			if (tlb_r_ready) begin
+			if (tlb_w_ready) begin
 				tlb_w_valid = 0;
 				CMDSucceed(0);
 			end
 			else begin
-				CMDStall();
+				//CMDStall();
 			end
 		end
 	end
 endfunction
+
+assign o_cmd_stall = cmd_stall;
+
+always_comb begin
+	cmd_stall = 0;
+	if (cmd_valid && cmd_op == `CP0_CMD_TLBPROBE && isInKernelMode()) begin
+		if (!tlb_p_valid)
+			cmd_stall = 1;
+		else if (!tlb_p_ready)
+			cmd_stall = 1;
+	end
+	if (cmd_valid && cmd_op == `CP0_CMD_TLBREAD && isInKernelMode()) begin
+		if (tlb_r_index != reg_index)
+			cmd_stall = 1;
+		else if (!tlb_r_ready)
+			cmd_stall = 1;
+	end
+	if (cmd_valid && (cmd_op == `CP0_CMD_TLBWI || cmd_op == `CP0_CMD_TLBWR) && isInKernelMode()) begin
+		if (!tlb_w_valid)
+			cmd_stall = 1;
+		else if (!tlb_w_ready)
+			cmd_stall = 1;
+	end
+end
 
 function void CMDTLBWriteIndexed;
 	TLBWrite(reg_index);
@@ -971,7 +992,6 @@ begin
 		/* Update output */
 		o_cmd_resp <= cmd_resp;
 		o_cmd_error <= cmd_error;
-		o_cmd_stall <= cmd_stall;
 		o_pl_reset <= pl_reset;
 		o_pl_flush <= pl_flush;
 		o_pl_rv <= pl_rv;

@@ -7,6 +7,8 @@ module bit_mips(
 		//rom接口
 		output      [31:0] ibus_addr,
 		output             ibus_read,
+		
+		output             exr_valid_if,
 		input       [31:0] ibus_data,
         
         input              ibus_stall,
@@ -14,6 +16,8 @@ module bit_mips(
 		//ram接口
 		output      [31:0] dbus_addr,
 		output             dbus_read,
+		output             exr_valid_mem,
+		
 		output             dbus_write,
 		output      [31:0] dbus_wdata,
 		output      [3:0]  dbus_byteenable,
@@ -29,7 +33,17 @@ module bit_mips(
 		input              int_req2,
 		input              int_req3,
 		input              int_req4,
-		input              int_req5
+		input              int_req5,
+		
+		output             tlbi_ready,
+		output             tlbi_miss,
+		output      [31:0] tlbi_paddr,
+		output             tlbi_c,
+		
+		output             tlbd_ready,
+		output             tlbd_miss,
+		output      [31:0] tlbd_paddr,
+		output             tlbd_c
 );
 
 wire  [5:0] if_id_exr_type;
@@ -138,8 +152,8 @@ wire [31:0] hilo_hi_data;
 wire        hilo_w_lo;
 wire [31:0] hilo_lo_data;
 
-wire [1:0]  hilo_addr;
-wire [31:0] hilo_data;
+wire        hilo_r;
+wire [63:0] hilo_data;
 
 wire start;
 wire flag_unsigned;
@@ -158,6 +172,8 @@ wire  [2:0]  cmd_sel;
 wire  [31:0] cmd_data;
 wire  [31:0] cmd_resp;
 wire         cmd_error;
+wire         cmd_stall;
+
 /* Pipeline */
 wire         pl_reset; /* invalidate all instructions and jump to rv */
 wire         pl_flush; /* finish instructions before the current one and jump to rv */
@@ -175,11 +191,20 @@ wire        int_reset; /* soft reset */
 wire        intr_timer;
 wire  [1:0] intr_soft;
 
+wire tlbi_v;
+wire tlbi_kern;
+
+wire tlbd_v;
+wire tlbd_d;
+wire tlbd_kern;
 
 assign output_flush = pl_flush;
 assign output_stall = stall;
 
-//CPU_InstructionFetch的例化
+assign exr_valid_if = if_id_exr_valid;
+assign exr_valid_mem = exr_valid;
+
+//CPU_InstructionFetch的例�?
 CPU_InstructionFetch if0(
 	.clock(clock),
 	.reset(pl_reset || pl_flush),
@@ -195,7 +220,13 @@ CPU_InstructionFetch if0(
 	.resetVector(pl_rv),
 	.exr_valid(if_id_exr_valid),
 	.exr_type(if_id_exr_type),
-	.exr_a0(if_id_exr_a0)
+	.exr_a0(if_id_exr_a0),
+
+	.tlb_miss(tlbi_miss),
+	.tlb_ready(tlbi_ready),
+	.tlb_v(tlbi_v),
+	.tlb_kern(tlbi_kern),
+	.iskernel(is_kernel)
 );
 
 //if_id例化
@@ -326,7 +357,7 @@ CPU_Execution ex0(
 	.output_w_lo(ex_mem_w_lo),
 	.output_lo_data(ex_mem_lo_data),
 	
-	.output_hilo_addr(hilo_addr),
+	.output_r_hilo(hilo_r),
 	.input_hilo_data(hilo_data),
 		
 	.mem_w_hi(wb_w_hi),
@@ -452,7 +483,14 @@ CPU_MemoryAccess mem0(
 		
 	.output_exr_valid(exr_valid),
 	.output_exr_type(exr_type),
-	.output_exr_a0(exr_a0)
+	.output_exr_a0(exr_a0),
+
+	.tlb_miss(tlbd_miss),
+	.tlb_ready(tlbd_ready),
+	.tlb_v(tlbd_v),
+	.tlb_d(tlbd_d),
+	.tlb_kern(tlbd_kern),
+	.iskernel(is_kernel)
 );
 
 //writeback例化
@@ -498,12 +536,12 @@ RegFile regfile0(
 
 //ctrl 例化
 ctrl ctrl0(
-	.stall_req_mem(dbus_stall),
-	.stall_req_ex(stall_req_ex),
+	.stall_req_mem(dbus_stall || ((dbus_read ||dbus_write) && !tlbd_ready)),
+	.stall_req_ex(stall_req_ex || cmd_stall),
 	.stall_req_exr_ex(stall_req_exr_ex),
 	.stall_req_exr_mem(stall_req_exr_mem),
 	.stall_req_id(stall_req_id),
-	.stall_req_if(ibus_stall),
+	.stall_req_if(ibus_stall || (ibus_read && !tlbi_ready)),
 	.stall(stall)
 );
 
@@ -511,7 +549,7 @@ ctrl ctrl0(
 hilo hilo0(
 	.clock(clock),
 	
-	.r_addr(hilo_addr),
+	.r_hilo(hilo_r),
 	.r_data(hilo_data),
 	
 	.w_hi(hilo_w_hi),
@@ -521,7 +559,7 @@ hilo hilo0(
 	.lo_data(hilo_lo_data)
 );
 
-//除法器 例化
+//除法�? 例化
 multi_cycle multi_cycle0(
 	.clock(clock),
 	.reset(pl_reset || pl_flush),
@@ -537,7 +575,6 @@ multi_cycle multi_cycle0(
 );
 
 /* Interrupt request */
-assign int_req = 0; /* hw sources, RIPL in EIC mode */
 assign int_nmi = 0;
 assign int_reset = 0; /* soft reset */
 	
@@ -559,7 +596,8 @@ MIPS32r2_CP0 #(
 	.cmd_data(cmd_data),
 	.o_cmd_resp(cmd_resp),
 	.o_cmd_error(cmd_error),
-
+	.o_cmd_stall(cmd_stall),
+	
 	/* Pipeline */
 	.o_pl_reset(pl_reset), /* invalidate all instructions and jump to rv */
 	. o_pl_flush(pl_flush), /* finish instructions before the current one and jump to rv */
@@ -579,7 +617,31 @@ MIPS32r2_CP0 #(
 
 	/* EIC interrupt output */
 	.o_intr_timer(intr_timer),
-	.o_intr_soft(intr_soft)
+	.o_intr_soft(intr_soft),
+	
+	.tlbi_valid(ibus_read),
+	.tlbi_vaddr(ibus_addr),
+	.tlbi_ready(tlbi_ready),
+	.tlbi_miss(tlbi_miss),
+	.tlbi_paddr(tlbi_paddr),
+	.tlbi_ri(),
+	.tlbi_xi(),
+	.tlbi_d(),
+	.tlbi_c(tlbi_c),
+	.tlbi_v(tlbi_v),
+	.tlbi_kern(tlbi_kern),
+	
+	.tlbd_valid(dbus_read || dbus_write),
+	.tlbd_vaddr(dbus_addr),
+	.tlbd_ready(tlbd_ready),
+	.tlbd_miss(tlbd_miss),
+	.tlbd_paddr(tlbd_paddr),
+	.tlbd_ri(),
+	.tlbd_xi(),
+	.tlbd_d(tlbd_d),
+	.tlbd_c(tlbd_c),
+	.tlbd_v(tlbd_v),
+	.tlbd_kern(tlbd_kern)	
 );
 
 endmodule
